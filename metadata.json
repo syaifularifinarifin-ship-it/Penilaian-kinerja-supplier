@@ -1,0 +1,6 @@
+{
+  "name": "Penilaian Kinerja Supplier",
+  "description": "Aplikasi penilaian kinerja supplier, rekapitulasi nilai kinerja supplier, dan raport penilaian per supplier per periode.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
