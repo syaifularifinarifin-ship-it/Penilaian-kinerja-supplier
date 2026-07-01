@@ -55,6 +55,7 @@ export default function RekapitulasiView() {
 
   // Report printing state
   const [selectedEvaluationForPrint, setSelectedEvaluationForPrint] = useState<Evaluation | null>(null);
+  const [showAllPrintPreview, setShowAllPrintPreview] = useState(false);
 
   // Filtering Evaluations
   const filteredEvals = evaluations.filter((item) => {
@@ -423,6 +424,174 @@ export default function RekapitulasiView() {
     );
   }
 
+  if (showAllPrintPreview) {
+    const totalSuppliers = filteredEvals.length;
+    const avgScore = totalSuppliers > 0 
+      ? Math.round((filteredEvals.reduce((sum, item) => sum + item.nilaiAkhir, 0) / totalSuppliers) * 100) / 100
+      : 0;
+      
+    const counts = {
+      sangatBaik: filteredEvals.filter(e => e.nilaiAkhir >= 4.25).length,
+      baik: filteredEvals.filter(e => e.nilaiAkhir >= 3.5 && e.nilaiAkhir < 4.25).length,
+      cukup: filteredEvals.filter(e => e.nilaiAkhir >= 3.0 && e.nilaiAkhir < 3.5).length,
+      kurang: filteredEvals.filter(e => e.nilaiAkhir < 3.0).length,
+    };
+
+    return (
+      <div id="print-all-summary-container" className="space-y-6">
+        {/* Top Sticky Bar - No Print */}
+        <div className="bg-white dark:bg-slate-900 p-4 rounded-lg border border-slate-200 dark:border-slate-800 shadow-xs flex justify-between items-center no-print animate-in fade-in duration-300">
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => setShowAllPrintPreview(false)}
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-slate-600 hover:text-slate-800 dark:text-slate-350 dark:hover:text-white bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg cursor-pointer transition-all"
+            >
+              <ArrowLeft className="w-4 h-4" /> Kembali ke Rekapitulasi
+            </button>
+            <div className="h-4 w-[1px] bg-slate-200 dark:bg-slate-800"></div>
+            <div>
+              <h2 className="text-sm font-black text-slate-800 dark:text-white">Pratinjau Cetak Rekapitulasi Kinerja</h2>
+              <p className="text-[10px] text-slate-400 font-medium">Laporan rekapitulasi kinerja seluruh penyedia barang/jasa PT PLN NPS.</p>
+            </div>
+          </div>
+
+          <div className="flex gap-2">
+            <button
+              onClick={() => window.print()}
+              className="flex items-center gap-1.5 px-4 py-2 text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg shadow-xs cursor-pointer transition-all animate-pulse"
+            >
+              <Printer className="w-4 h-4" /> Cetak Rekap (PDF)
+            </button>
+          </div>
+        </div>
+
+        {/* Printable formal paper */}
+        <div className="bg-white text-slate-900 dark:bg-white dark:text-slate-900 rounded-lg border border-slate-250 p-8 sm:p-12 shadow-md max-w-5xl mx-auto space-y-6 print-container relative overflow-hidden animate-in zoom-in-95 duration-200">
+          <div className="absolute top-0 left-0 right-0 h-1.5 bg-linear-to-r from-sky-400 via-sky-600 to-emerald-500"></div>
+
+          {/* Header Kop */}
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b border-slate-300 pb-5 gap-4">
+            <div className="space-y-3">
+              <Logo variant="print" height={42} />
+              <div className="space-y-1">
+                <h1 className="text-xl font-extrabold uppercase tracking-tight text-slate-900 mt-1">
+                  Rekapitulasi Hasil Penilaian Kinerja Supplier
+                </h1>
+                <p className="text-[10px] font-mono text-slate-500">No. Dok: EVL/REKAP/{selectedYear}/{selectedPeriode.replace(/\s+/g, '').toUpperCase()}</p>
+              </div>
+            </div>
+            
+            <div className="text-left sm:text-right bg-slate-50 p-4 rounded-lg border border-slate-200 min-w-[200px]">
+              <p className="text-[9px] font-bold text-slate-500 uppercase tracking-wider">Periode Rekapitulasi</p>
+              <p className="text-xs font-extrabold text-slate-800 mt-0.5">{selectedPeriode === "Semua" ? "Seluruh Periode" : selectedPeriode}</p>
+              <p className="text-[10px] text-slate-500 mt-0.5 font-bold">Tahun Buku {selectedYear}</p>
+            </div>
+          </div>
+
+          {/* Quick Summary Widgets for Print */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-xs">
+            <div className="bg-slate-50 p-3 rounded-lg border border-slate-200 text-center">
+              <p className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Total Supplier</p>
+              <p className="text-xl font-black text-slate-800 mt-1">{totalSuppliers}</p>
+            </div>
+            <div className="bg-slate-50 p-3 rounded-lg border border-slate-200 text-center">
+              <p className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Rata-rata Nilai</p>
+              <p className="text-xl font-black text-[#0284c7] mt-1">{avgScore.toFixed(2)}</p>
+            </div>
+            <div className="bg-slate-50 p-3 rounded-lg border border-slate-200 text-center">
+              <p className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Sangat Baik / Baik</p>
+              <p className="text-xl font-black text-emerald-600 mt-1">{counts.sangatBaik + counts.baik}</p>
+            </div>
+            <div className="bg-slate-50 p-3 rounded-lg border border-slate-200 text-center">
+              <p className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Cukup / Kurang</p>
+              <p className="text-xl font-black text-amber-600 mt-1">{counts.cukup + counts.kurang}</p>
+            </div>
+          </div>
+
+          {/* Detail Table */}
+          <div className="space-y-2">
+            <h3 className="font-extrabold text-[10px] text-slate-700 uppercase tracking-wider">
+              Daftar Hasil Evaluasi Kinerja Kemitraan
+            </h3>
+
+            <table className="w-full text-left border-collapse text-[11px] border border-slate-300">
+              <thead>
+                <tr className="bg-slate-50 border-b border-slate-300 text-slate-600 font-bold uppercase text-[9px] tracking-wider">
+                  <th className="py-2.5 px-3 border-r border-slate-250">No</th>
+                  <th className="py-2.5 px-3 border-r border-slate-250">Nama Supplier / No. PO</th>
+                  <th className="py-2.5 px-3 border-r border-slate-250">Unit</th>
+                  <th className="py-2.5 px-3 border-r border-slate-250 text-center">Int (15%)</th>
+                  <th className="py-2.5 px-3 border-r border-slate-250 text-center">Mut (15%)</th>
+                  <th className="py-2.5 px-3 border-r border-slate-250 text-center">Wkt (15%)</th>
+                  <th className="py-2.5 px-3 border-r border-slate-250 text-center">K3L (20%)</th>
+                  <th className="py-2.5 px-3 border-r border-slate-250 text-center text-sky-700">Nilai</th>
+                  <th className="py-2.5 px-3 text-center">Predikat</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-250 text-slate-800">
+                {filteredEvals.map((item, index) => {
+                  const { predikat, color } = getPredikatAndColor(item.nilaiAkhir);
+                  return (
+                    <tr key={item.id} className="hover:bg-slate-50/50">
+                      <td className="py-2 px-3 text-center border-r border-slate-250 font-medium">{index + 1}</td>
+                      <td className="py-2 px-3 border-r border-slate-250">
+                        <div className="font-extrabold text-slate-900">{item.supplierNama}</div>
+                        <div className="text-[9px] text-slate-500 font-mono mt-0.5">
+                          {item.noPo ? `PO: ${item.noPo}` : "-"}
+                        </div>
+                      </td>
+                      <td className="py-2 px-3 border-r border-slate-250 font-semibold">{item.unitKode || "-"}</td>
+                      <td className="py-2 px-3 text-center border-r border-slate-250 font-mono">{item.scores.integritas.toFixed(1)}</td>
+                      <td className="py-2 px-3 text-center border-r border-slate-250 font-mono">{item.scores.mutu.toFixed(1)}</td>
+                      <td className="py-2 px-3 text-center border-r border-slate-250 font-mono">{item.scores.waktu.toFixed(1)}</td>
+                      <td className="py-2 px-3 text-center border-r border-slate-250 font-mono">{item.scores.k3l.toFixed(1)}</td>
+                      <td className="py-2 px-3 text-center border-r border-slate-250 font-black text-slate-950 font-mono bg-sky-50/30">{item.nilaiAkhir.toFixed(2)}</td>
+                      <td className="py-2 px-3 text-center font-bold">
+                        <span className={`uppercase text-[9px] font-black ${color}`}>{predikat}</span>
+                      </td>
+                    </tr>
+                  );
+                })}
+                {filteredEvals.length === 0 && (
+                  <tr>
+                    <td colSpan={9} className="py-10 text-center text-slate-400 italic">
+                      Tidak ada data penilaian untuk periode ini.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Signatures */}
+          <div className="grid grid-cols-2 pt-12 border-t border-slate-200 gap-12 text-xs">
+            <div className="space-y-16">
+              <p className="text-slate-500 font-medium">Disiapkan Oleh,<br /><span className="font-bold text-slate-900">PT PLN NUSANTARA POWER SERVICES</span></p>
+              <div className="space-y-1">
+                <p className="font-bold text-slate-950 underline">........................................................</p>
+                <p className="text-[10px] text-slate-500">Evaluator / Penilai Mutu</p>
+              </div>
+            </div>
+
+            <div className="space-y-16 text-right">
+              <p className="text-slate-500 font-medium">Disahkan Oleh,<br /><span className="font-bold text-slate-900">PT PLN NUSANTARA POWER SERVICES</span></p>
+              <div className="space-y-1">
+                <p className="font-bold text-slate-950 underline">........................................................</p>
+                <p className="text-[10px] text-slate-500">Manager Pengadaan / Kemitraan</p>
+                <p className="text-[9px] text-slate-400">Tanggal Cetak: {new Date().toLocaleDateString('id-ID', { year: 'numeric', month: 'long', day: 'numeric' })}</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Document Footer Note */}
+          <div className="text-center pt-8 border-t border-slate-150 text-[9px] text-slate-400 uppercase tracking-wider font-medium font-mono">
+            Dokumen Rekapitulasi Penilaian Kinerja ini diunduh secara resmi melalui aplikasi SIPEKS PLN NPS
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div id="rekapitulasi-view" className="space-y-6">
       
@@ -437,14 +606,24 @@ export default function RekapitulasiView() {
           </p>
         </div>
         
-        {/* Export action */}
-        <button 
-          onClick={handleExportData}
-          className="flex items-center justify-center gap-1.5 bg-[#0284c7] hover:bg-sky-700 text-white text-xs font-semibold px-4 py-2 rounded cursor-pointer transition-colors w-full md:w-auto"
-        >
-          <Download className="w-4 h-4" />
-          Ekspor CSV / Excel
-        </button>
+        {/* Action Buttons */}
+        <div className="flex flex-col sm:flex-row gap-2 w-full md:w-auto">
+          <button 
+            onClick={() => setShowAllPrintPreview(true)}
+            className="flex items-center justify-center gap-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold px-4 py-2 rounded cursor-pointer transition-colors w-full md:w-auto shadow-xs"
+          >
+            <Printer className="w-4 h-4" />
+            Cetak Rekap Kinerja
+          </button>
+          
+          <button 
+            onClick={handleExportData}
+            className="flex items-center justify-center gap-1.5 bg-[#0284c7] hover:bg-sky-700 text-white text-xs font-semibold px-4 py-2 rounded cursor-pointer transition-colors w-full md:w-auto"
+          >
+            <Download className="w-4 h-4" />
+            Ekspor CSV / Excel
+          </button>
+        </div>
       </div>
 
       {/* Export Alert Notification */}
