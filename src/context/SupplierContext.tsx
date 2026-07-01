@@ -243,7 +243,7 @@ const initialEvaluations: Evaluation[] = [
     evaluator: "Syaiful Arifin (Manajer K3L)",
     tanggalPenilaian: "2026-06-22",
     noPo: "PO/2026/00277",
-    deskripsiPo: "Pengadaan Alat Pelindung Diri (APD) dan Safety Shoes Unit Jati B",
+    deskripsiPo: "Pengadaan Alat Pelindung Diri (APD) dan Safety Shoes",
     tanggalPo: "2026-04-01",
   },
   {
@@ -268,7 +268,7 @@ const initialEvaluations: Evaluation[] = [
     evaluator: "Syaiful Arifin (Manajer Efisiensi Energi)",
     tanggalPenilaian: "2026-06-24",
     noPo: "PO/2026/00199",
-    deskripsiPo: "Jasa Konsultan Audit Energi Sektor 1-4 Jati B",
+    deskripsiPo: "Jasa Konsultan Audit Energi Sektor 1-4 PLN NPS",
     tanggalPo: "2026-02-18",
   },
   {
