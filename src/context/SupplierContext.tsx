@@ -242,6 +242,9 @@ const initialEvaluations: Evaluation[] = [
     rekomendasi: "Mitra berkinerja luar biasa. Respon cepat, harga sangat bersaing, dan pemenuhan sertifikasi alat keselamatan lengkap.",
     evaluator: "Syaiful Arifin (Manajer K3L)",
     tanggalPenilaian: "2026-06-22",
+    noPo: "PO/2026/00277",
+    deskripsiPo: "Pengadaan Alat Pelindung Diri (APD) dan Safety Shoes Unit Jati B",
+    tanggalPo: "2026-04-01",
   },
   {
     id: "eval-5",
@@ -264,6 +267,9 @@ const initialEvaluations: Evaluation[] = [
     rekomendasi: "Kinerja baik dalam menyusun baseline audit energi pembangkit. Perlu peningkatan koordinasi rapat.",
     evaluator: "Syaiful Arifin (Manajer Efisiensi Energi)",
     tanggalPenilaian: "2026-06-24",
+    noPo: "PO/2026/00199",
+    deskripsiPo: "Jasa Konsultan Audit Energi Sektor 1-4 Jati B",
+    tanggalPo: "2026-02-18",
   },
   {
     id: "eval-6",
@@ -286,6 +292,9 @@ const initialEvaluations: Evaluation[] = [
     rekomendasi: "Pekerjaan migrasi firewall pembangkit berjalan aman. Komunikasi dan penanganan insiden siber berjalan cepat.",
     evaluator: "Syaiful Arifin (Manajer IT)",
     tanggalPenilaian: "2026-06-25",
+    noPo: "PO/2026/00310",
+    deskripsiPo: "Pembaruan Lisensi & Hardening Firewall Network Pembangkit",
+    tanggalPo: "2026-03-12",
   },
   {
     id: "eval-7",
@@ -308,6 +317,9 @@ const initialEvaluations: Evaluation[] = [
     rekomendasi: "Diberikan teguran tertulis pertama (SP-1) karena keterlambatan pengiriman kabel kontrol sejauh 14 hari, dan kurangnya kepatuhan APD teknisi.",
     evaluator: "Syaiful Arifin (Manajer Logistik)",
     tanggalPenilaian: "2026-06-27",
+    noPo: "PO/2026/00602",
+    deskripsiPo: "Pengadaan Kabel Kontrol NYY 4x10mm & Accessories Trafo",
+    tanggalPo: "2026-05-02",
   },
   // 2025 Historical evaluations to show trend
   {

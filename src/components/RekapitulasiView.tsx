@@ -138,10 +138,69 @@ export default function RekapitulasiView() {
     }
   };
 
-  // Simulate export to CSV/Excel alert message
+  // Real export to CSV containing PO number, date and description
   const [exportNotification, setExportNotification] = useState(false);
   const handleExportData = () => {
     setExportNotification(true);
+
+    const headers = [
+      "ID Penilaian",
+      "Nama Supplier",
+      "Unit Pembangkit",
+      "Tahun Buku",
+      "Periode",
+      "Nomor PO",
+      "Tanggal PO",
+      "Deskripsi PO",
+      "Nilai Integritas (15%)",
+      "Nilai Kerjasama (10%)",
+      "Nilai Mutu (15%)",
+      "Nilai Waktu (15%)",
+      "Nilai Harga (10%)",
+      "Nilai K3L (20%)",
+      "Nilai Keamanan (10%)",
+      "Nilai Energi (5%)",
+      "Nilai Akhir",
+      "Predikat Kelayakan",
+      "Evaluator",
+      "Tanggal Penilaian",
+      "Rekomendasi"
+    ];
+
+    const rows = filteredEvals.map(item => [
+      item.id,
+      `"${item.supplierNama.replace(/"/g, '""')}"`,
+      `"${(item.unitNama || '').replace(/"/g, '""')}"`,
+      item.tahun,
+      item.periode,
+      item.noPo ? `"${item.noPo.replace(/"/g, '""')}"` : "",
+      item.tanggalPo || "",
+      item.deskripsiPo ? `"${item.deskripsiPo.replace(/"/g, '""')}"` : "",
+      item.scores.integritas,
+      item.scores.kerjasama,
+      item.scores.mutu,
+      item.scores.waktu,
+      item.scores.harga,
+      item.scores.k3l,
+      item.scores.keamanan,
+      item.scores.energi,
+      item.nilaiAkhir,
+      item.predikat,
+      `"${item.evaluator.replace(/"/g, '""')}"`,
+      item.tanggalPenilaian,
+      `"${item.rekomendasi.replace(/"/g, '""')}"`
+    ]);
+
+    const csvContent = "\uFEFF" + [headers.join(","), ...rows.map(e => e.join(","))].join("\n");
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.setAttribute("href", url);
+    link.setAttribute("download", `Rekapitulasi_Kinerja_Supplier_${selectedYear}_${selectedPeriode.replace(/\s+/g, '_')}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+
     setTimeout(() => {
       setExportNotification(false);
     }, 4000);
@@ -529,7 +588,10 @@ export default function RekapitulasiView() {
                             </span>
                           )}
                           {item.noPo && (
-                            <span className="inline-block text-[8.5px] px-1.5 py-0.2 bg-sky-50 dark:bg-sky-950/40 text-[#0284c7] dark:text-sky-400 rounded font-bold border border-sky-100 dark:border-sky-900/40">
+                            <span 
+                              className="inline-block text-[8.5px] px-1.5 py-0.2 bg-sky-50 dark:bg-sky-950/40 text-[#0284c7] dark:text-sky-400 rounded font-bold border border-sky-100 dark:border-sky-900/40 cursor-help"
+                              title={`Tanggal PO: ${item.tanggalPo || '-'} | Deskripsi PO: ${item.deskripsiPo || '-'}`}
+                            >
                               PO: {item.noPo}
                             </span>
                           )}

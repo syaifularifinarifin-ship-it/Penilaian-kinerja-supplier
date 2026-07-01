@@ -76,6 +76,7 @@ export default function InputPenilaianView() {
   const [tanggalPo, setTanggalPo] = useState("");
   const [errorMsg, setErrorMsg] = useState("");
   const [showPrintPreview, setShowPrintPreview] = useState(false);
+  const [isPrintBlankForm, setIsPrintBlankForm] = useState(false);
 
   // Quick Inline Supplier registration
   const [isInlineSupOpen, setIsInlineSupOpen] = useState(false);
@@ -275,9 +276,9 @@ export default function InputPenilaianView() {
   }
 
   // Find selected supplier for preview
-  const selectedSup = suppliers.find(s => s.id === supplierId);
+  const selectedSup = isPrintBlankForm ? (suppliers.find(s => s.id === supplierId) || null) : suppliers.find(s => s.id === supplierId);
   // Find selected unit for preview
-  const selectedUnit = units.find(u => u.id === unitId);
+  const selectedUnit = isPrintBlankForm ? (units.find(u => u.id === unitId) || null) : units.find(u => u.id === unitId);
 
   if (showPrintPreview) {
     return (
@@ -286,15 +287,24 @@ export default function InputPenilaianView() {
         <div className="bg-white dark:bg-slate-900 p-4 rounded-lg border border-slate-200 dark:border-slate-800 shadow-xs flex justify-between items-center no-print">
           <div className="flex items-center gap-3">
             <button
-              onClick={() => setShowPrintPreview(false)}
+              onClick={() => {
+                setShowPrintPreview(false);
+                setIsPrintBlankForm(false);
+              }}
               className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-slate-600 hover:text-slate-800 dark:text-slate-350 dark:hover:text-white bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg cursor-pointer transition-all"
             >
               <ArrowLeft className="w-4 h-4" /> Kembali Edit
             </button>
             <div className="h-4 w-[1px] bg-slate-200 dark:bg-slate-800"></div>
             <div>
-              <h2 className="text-sm font-black text-slate-800 dark:text-white">Mode Pratinjau Dokumen</h2>
-              <p className="text-[10px] text-slate-400 font-medium">Gunakan tombol cetak untuk menyimpan sebagai PDF atau mencetak fisik.</p>
+              <h2 className="text-sm font-black text-slate-800 dark:text-white">
+                {isPrintBlankForm ? "Pratinjau Formulir Kosong" : "Mode Pratinjau Dokumen"}
+              </h2>
+              <p className="text-[10px] text-slate-400 font-medium">
+                {isPrintBlankForm 
+                  ? "Formulir ini dicetak tanpa nilai untuk pengisian penilaian secara manual/fisik." 
+                  : "Gunakan tombol cetak untuk menyimpan sebagai PDF atau mencetak fisik."}
+              </p>
             </div>
           </div>
 
@@ -319,23 +329,31 @@ export default function InputPenilaianView() {
               <Logo variant="print" height={42} />
               <div className="space-y-1">
                 <h1 className="text-xl font-extrabold uppercase tracking-tight text-slate-900 mt-1">
-                  Formulir Evaluasi Kinerja Supplier
+                  Formulir Evaluasi Kinerja Supplier {isPrintBlankForm && "(Kosongan)"}
                 </h1>
-                <p className="text-[10px] font-mono text-slate-500">No. Dok: EVL/FORM/{tahun}/{selectedSup?.nama.slice(0,3).toUpperCase() || "MITRA"}</p>
+                <p className="text-[10px] font-mono text-slate-500">
+                  No. Dok: EVL/FORM/{tahun}/{selectedSup?.nama ? selectedSup.nama.slice(0,3).toUpperCase() : "MITRA"}
+                </p>
               </div>
             </div>
             
             <div className="text-left sm:text-right bg-slate-50 p-4 rounded-lg border border-slate-200 min-w-[200px]">
               <p className="text-[9px] font-bold text-slate-500 uppercase tracking-wider">Periode Penilaian</p>
-              <p className="text-xs font-extrabold text-slate-800 mt-0.5">{periode}</p>
-              <p className="text-[10px] text-slate-500 mt-0.5 font-bold">Tahun Buku {tahun}</p>
-              {selectedUnit && (
+              <p className="text-xs font-extrabold text-slate-800 mt-0.5">{isPrintBlankForm && !supplierId ? "............................" : periode}</p>
+              <p className="text-[10px] text-slate-500 mt-0.5 font-bold">Tahun Buku {isPrintBlankForm && !supplierId ? "............" : tahun}</p>
+              {selectedUnit ? (
                 <div className="mt-2 pt-2 border-t border-slate-200">
                   <span className="inline-block text-[9px] font-extrabold bg-indigo-50 text-indigo-700 px-2 py-0.5 rounded border border-indigo-100 uppercase tracking-wider">
                     {selectedUnit.nama} ({selectedUnit.kode})
                   </span>
                 </div>
-              )}
+              ) : isPrintBlankForm ? (
+                <div className="mt-2 pt-2 border-t border-slate-200">
+                  <span className="inline-block text-[9px] font-semibold text-slate-400">
+                    Unit: .......................................
+                  </span>
+                </div>
+              ) : null}
             </div>
           </div>
 
@@ -348,11 +366,13 @@ export default function InputPenilaianView() {
               <div className="space-y-1.5 text-slate-800">
                 <p className="text-xs font-bold flex items-center gap-1.5">
                   <Building2 className="w-4 h-4 text-slate-400 shrink-0" />
-                  {selectedSup?.nama || "Mitra Belum Dipilih"}
+                  {selectedSup?.nama || "Nama Mitra: .............................................................."}
                 </p>
-                <p className="text-slate-500 font-medium pl-5 text-[11px]">{selectedSup?.kategoriBisnis || "Kategori Kerja"}</p>
+                <p className="text-slate-500 font-medium pl-5 text-[11px]">
+                  {selectedSup?.kategoriBisnis || "Kategori/Bidang: ...................................................."}
+                </p>
                 <p className="text-slate-600 pl-5 text-[11px] flex items-start gap-1 leading-relaxed">
-                  <span className="font-semibold text-slate-400">Alamat:</span> {selectedSup?.alamat || "-"}
+                  <span className="font-semibold text-slate-400">Alamat:</span> {selectedSup?.alamat || "......................................................................................"}
                 </p>
               </div>
             </div>
@@ -362,34 +382,30 @@ export default function InputPenilaianView() {
                 Keterangan Penilaian
               </h3>
               <div className="space-y-1.5 text-slate-800 text-[11px]">
-                <p><span className="font-bold text-slate-400 uppercase tracking-wide text-[9px] inline-block w-24">Evaluator:</span> <span className="font-semibold text-slate-800">{evaluator}</span></p>
-                <p><span className="font-bold text-slate-400 uppercase tracking-wide text-[9px] inline-block w-24">Tanggal Input:</span> <span className="font-mono font-semibold text-slate-800">{tanggalPenilaian}</span></p>
-                <p><span className="font-bold text-slate-400 uppercase tracking-wide text-[9px] inline-block w-24">Kontak PIC:</span> <span className="font-semibold text-slate-800">{selectedSup?.kontak || "-"} ({selectedSup?.telepon || "-"})</span></p>
+                <p><span className="font-bold text-slate-400 uppercase tracking-wide text-[9px] inline-block w-24">Evaluator:</span> <span className="font-semibold text-slate-800">{isPrintBlankForm && !supplierId ? "........................................................" : evaluator}</span></p>
+                <p><span className="font-bold text-slate-400 uppercase tracking-wide text-[9px] inline-block w-24">Tanggal Input:</span> <span className="font-mono font-semibold text-slate-800">{isPrintBlankForm && !supplierId ? "................................" : tanggalPenilaian}</span></p>
+                <p><span className="font-bold text-slate-400 uppercase tracking-wide text-[9px] inline-block w-24">Kontak PIC:</span> <span className="font-semibold text-slate-800">{selectedSup?.kontak ? `${selectedSup.kontak} (${selectedSup.telepon || "-"})` : "................................ / ............................."}</span></p>
               </div>
             </div>
           </div>
 
-          {/* PO Information (If Filled) */}
-          {(noPo || deskripsiPo || tanggalPo) && (
+          {/* PO Information (If Filled or Blank Form mode) */}
+          {(isPrintBlankForm || noPo || deskripsiPo || tanggalPo) && (
             <div className="bg-sky-50/50 p-4 rounded-lg border border-sky-150 grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
-              {noPo && (
-                <div className="space-y-0.5">
-                  <p className="font-bold text-slate-400 uppercase tracking-wider text-[8px]">Nomor Purchase Order (PO)</p>
-                  <p className="font-bold text-slate-800 text-[11px] font-mono">{noPo}</p>
-                </div>
-              )}
-              {tanggalPo && (
-                <div className="space-y-0.5">
-                  <p className="font-bold text-slate-400 uppercase tracking-wider text-[8px]">Tanggal Purchase Order</p>
-                  <p className="font-bold text-slate-800 text-[11px] font-mono">{tanggalPo}</p>
-                </div>
-              )}
-              {deskripsiPo && (
-                <div className="space-y-0.5 md:col-span-1">
-                  <p className="font-bold text-slate-400 uppercase tracking-wider text-[8px]">Deskripsi Pekerjaan PO</p>
-                  <p className="font-medium text-slate-700 text-[11px] truncate" title={deskripsiPo}>{deskripsiPo}</p>
-                </div>
-              )}
+              <div className="space-y-0.5">
+                <p className="font-bold text-slate-400 uppercase tracking-wider text-[8px]">Nomor Purchase Order (PO)</p>
+                <p className="font-bold text-slate-800 text-[11px] font-mono">{isPrintBlankForm && !noPo ? "........................................" : (noPo || "-")}</p>
+              </div>
+              <div className="space-y-0.5">
+                <p className="font-bold text-slate-400 uppercase tracking-wider text-[8px]">Tanggal Purchase Order</p>
+                <p className="font-bold text-slate-800 text-[11px] font-mono">{isPrintBlankForm && !tanggalPo ? "........................................" : (tanggalPo || "-")}</p>
+              </div>
+              <div className="space-y-0.5 md:col-span-1">
+                <p className="font-bold text-slate-400 uppercase tracking-wider text-[8px]">Deskripsi Pekerjaan PO</p>
+                <p className="font-medium text-slate-700 text-[11px] truncate" title={deskripsiPo}>
+                  {isPrintBlankForm && !deskripsiPo ? "............................................................" : (deskripsiPo || "-")}
+                </p>
+              </div>
             </div>
           )}
 
@@ -411,8 +427,8 @@ export default function InputPenilaianView() {
                 {(Object.keys(scores) as AspectKey[]).map((key) => {
                   const label = ASPECT_LABELS[key];
                   const weight = ASPECT_WEIGHTS[key];
-                  const score = scores[key] || 0;
-                  const contrib = Math.round((score * weight) * 100) / 100;
+                  const score = isPrintBlankForm ? null : (scores[key] || 0);
+                  const contrib = score !== null ? Math.round((score * weight) * 100) / 100 : null;
 
                   return (
                     <div key={key} className="grid grid-cols-12 p-3 items-center bg-white">
@@ -420,9 +436,13 @@ export default function InputPenilaianView() {
                         <p className="font-bold text-slate-800 text-xs">{label}</p>
                         <p className="text-[10px] text-slate-400 leading-relaxed mt-0.5">{ASPECT_DESCRIPTIONS[key].replace(/\n/g, "; ")}</p>
                       </div>
-                      <div className="col-span-2 text-center font-bold text-slate-850 font-mono">{score.toFixed(1)}</div>
+                      <div className="col-span-2 text-center font-bold text-slate-850 font-mono">
+                        {score !== null ? score.toFixed(1) : "........"}
+                      </div>
                       <div className="col-span-2 text-center text-slate-500 font-bold">{weight * 100}%</div>
-                      <div className="col-span-3 sm:col-span-2 text-right font-black text-slate-900 font-mono">{contrib.toFixed(2)}</div>
+                      <div className="col-span-3 sm:col-span-2 text-right font-black text-slate-900 font-mono">
+                        {contrib !== null ? contrib.toFixed(2) : "........"}
+                      </div>
                     </div>
                   );
                 })}
@@ -435,7 +455,7 @@ export default function InputPenilaianView() {
                   <div className="col-span-2 text-center"></div>
                   <div className="col-span-2 text-center font-black text-slate-500">100%</div>
                   <div className="col-span-3 sm:col-span-2 text-right text-lg font-black text-[#0284c7] font-mono">
-                    {currentNilaiAkhir.toFixed(2)}
+                    {isPrintBlankForm ? "........" : currentNilaiAkhir.toFixed(2)}
                   </div>
                 </div>
               </div>
@@ -446,9 +466,30 @@ export default function InputPenilaianView() {
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center p-4 bg-slate-50 border border-slate-300 rounded-lg gap-4">
             <div>
               <p className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Peringkat & Kategori Kelayakan</p>
-              <h4 className={`text-base font-black uppercase mt-1 ${color}`}>
-                {predikat}
-              </h4>
+              {isPrintBlankForm ? (
+                <div className="flex flex-wrap gap-4 mt-2 text-[10px] font-bold text-slate-700">
+                  <div className="flex items-center gap-1.5">
+                    <span className="w-3.5 h-3.5 border border-slate-400 rounded-xs inline-block bg-white"></span>
+                    <span>Sangat Baik (&ge; 4.25)</span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <span className="w-3.5 h-3.5 border border-slate-400 rounded-xs inline-block bg-white"></span>
+                    <span>Baik (3.5 - 4.24)</span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <span className="w-3.5 h-3.5 border border-slate-400 rounded-xs inline-block bg-white"></span>
+                    <span>Cukup (3.0 - 3.49)</span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <span className="w-3.5 h-3.5 border border-slate-400 rounded-xs inline-block bg-white"></span>
+                    <span>Kurang (&lt; 3.0)</span>
+                  </div>
+                </div>
+              ) : (
+                <h4 className={`text-base font-black uppercase mt-1 ${color}`}>
+                  {predikat}
+                </h4>
+              )}
             </div>
             <div className="text-[10px] text-slate-500 max-w-md leading-relaxed italic">
               Predikat ini merupakan klasifikasi penilaian kelayakan kerja mitra yang sah sesuai regulasi internal PLN NPS.
@@ -460,8 +501,15 @@ export default function InputPenilaianView() {
             <h3 className="font-extrabold text-[10px] text-slate-700 uppercase tracking-wider">
               Rekomendasi Manajerial & Catatan Tindak Lanjut
             </h3>
-            <div className="p-4 bg-slate-50/50 rounded-lg border border-slate-300 text-xs text-slate-700 italic leading-relaxed shadow-xs min-h-[60px]">
-              {rekomendasi.trim() ? `“${rekomendasi}”` : `“Kinerja dinilai ${predikat} dengan rata-rata tertimbang ${currentNilaiAkhir.toFixed(2)}.”`}
+            <div className="p-4 bg-slate-50/50 rounded-lg border border-slate-300 text-xs text-slate-700 italic leading-relaxed shadow-xs min-h-[80px]">
+              {isPrintBlankForm ? (
+                <div className="space-y-3 pt-1">
+                  <p className="text-slate-300">Catatan: ..................................................................................................................................................................................................................</p>
+                  <p className="text-slate-300">................................................................................................................................................................................................................................</p>
+                </div>
+              ) : (
+                rekomendasi.trim() ? `“${rekomendasi}”` : `“Kinerja dinilai ${predikat} dengan rata-rata tertimbang ${currentNilaiAkhir.toFixed(2)}.”`
+              )}
             </div>
           </div>
 
@@ -470,9 +518,9 @@ export default function InputPenilaianView() {
             <div className="space-y-16">
               <p className="text-slate-500 font-medium">Pihak Pertama,<br /><span className="font-bold text-slate-900">PT PLN NUSANTARA POWER SERVICES</span></p>
               <div className="space-y-1">
-                <p className="font-bold text-slate-950 underline">{evaluator.split(" (")[0]}</p>
+                <p className="font-bold text-slate-950 underline">{isPrintBlankForm && !supplierId ? "..........................................................." : evaluator.split(" (")[0]}</p>
                 <p className="text-[10px] text-slate-500">Evaluator / Penilai Mutu</p>
-                <p className="text-[9px] text-slate-400 font-mono">NID / NIP: {currentUser?.nid || "-"}</p>
+                <p className="text-[9px] text-slate-400 font-mono">NID / NIP: {isPrintBlankForm && !supplierId ? "........................................" : (currentUser?.nid || "-")}</p>
               </div>
             </div>
 
@@ -481,7 +529,7 @@ export default function InputPenilaianView() {
               <div className="space-y-1">
                 <p className="font-bold text-slate-950 underline">{selectedSup?.kontak || "_________________________"}</p>
                 <p className="text-[10px] text-slate-500">Pimpinan / Perwakilan Mitra</p>
-                <p className="text-[9px] text-slate-400">Tanggal Pengesahan: {tanggalPenilaian}</p>
+                <p className="text-[9px] text-slate-400">Tanggal Pengesahan: {isPrintBlankForm && !supplierId ? "..............................." : tanggalPenilaian}</p>
               </div>
             </div>
           </div>
@@ -511,7 +559,18 @@ export default function InputPenilaianView() {
               : "Masukkan skor indikator kinerja supplier berdasarkan kriteria aspek dengan bobot tetap pembangkit."}
           </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
+          <button 
+            type="button"
+            onClick={() => {
+              setErrorMsg("");
+              setIsPrintBlankForm(true);
+              setShowPrintPreview(true);
+            }}
+            className="flex items-center gap-1.5 text-[11px] font-bold text-indigo-700 hover:text-indigo-800 bg-indigo-50 dark:bg-indigo-950/30 px-2.5 py-1.5 rounded border border-indigo-200 dark:border-indigo-900/40 cursor-pointer transition-colors"
+          >
+            <FileText className="w-3.5 h-3.5" /> Cetak Formulir Kosong
+          </button>
           <button 
             type="button"
             onClick={() => {
@@ -520,6 +579,7 @@ export default function InputPenilaianView() {
                 return;
               }
               setErrorMsg("");
+              setIsPrintBlankForm(false);
               setShowPrintPreview(true);
             }}
             className="flex items-center gap-1.5 text-[11px] font-bold text-emerald-700 hover:text-emerald-800 bg-emerald-50 dark:bg-emerald-950/30 px-2.5 py-1.5 rounded border border-emerald-250 dark:border-emerald-900/40 cursor-pointer transition-colors"
@@ -890,6 +950,18 @@ export default function InputPenilaianView() {
             >
               Kembali ke Rekap
             </button>
+             <button 
+              type="button"
+              onClick={() => {
+                setErrorMsg("");
+                setIsPrintBlankForm(true);
+                setShowPrintPreview(true);
+              }}
+              className="flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-950/20 dark:text-indigo-400 rounded cursor-pointer transition-colors border border-indigo-200 dark:border-indigo-900/40"
+            >
+              <FileText className="w-4 h-4" />
+              Cetak Formulir Kosong
+            </button>
             <button 
               type="button"
               onClick={() => {
@@ -898,6 +970,7 @@ export default function InputPenilaianView() {
                   return;
                 }
                 setErrorMsg("");
+                setIsPrintBlankForm(false);
                 setShowPrintPreview(true);
               }}
               className="flex items-center gap-1.5 px-4 py-2 text-xs font-semibold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/20 dark:text-emerald-400 rounded cursor-pointer transition-colors border border-emerald-200 dark:border-emerald-900/40"

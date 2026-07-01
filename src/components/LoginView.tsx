@@ -98,7 +98,7 @@ export default function LoginView() {
           <Logo height={45} className="mx-auto" />
           <div className="space-y-1">
             <h1 className="text-lg font-black tracking-tight text-slate-950 dark:text-white">
-              SIPEKS <span className="text-indigo-600 dark:text-indigo-400">JATI B</span>
+              SIPEKS <span className="text-sky-600 dark:text-sky-400">PLN NPS</span>
             </h1>
             <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
               Sistem Evaluasi Kinerja Supplier
