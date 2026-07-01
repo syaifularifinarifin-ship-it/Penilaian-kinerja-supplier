@@ -114,7 +114,9 @@ export default function UnitDatabaseView() {
 
   // Helper to parse CSV text
   const parseCSV = (text: string) => {
-    const lines = text.split("\n").map(line => line.trim()).filter(line => line.length > 0);
+    // Remove BOM if present
+    const cleanText = text.startsWith("\uFEFF") ? text.slice(1) : text;
+    const lines = cleanText.split("\n").map(line => line.trim()).filter(line => line.length > 0);
     if (lines.length === 0) return [];
     
     const parseCSVLine = (line: string) => {
@@ -136,15 +138,15 @@ export default function UnitDatabaseView() {
       return result;
     };
 
-    const headers = parseCSVLine(lines[0]);
-    const data = [];
+    const headers = parseCSVLine(lines[0]).map(h => h.trim().toLowerCase());
+    const data: any[] = [];
     
     for (let i = 1; i < lines.length; i++) {
       const values = parseCSVLine(lines[i]);
-      if (values.length === headers.length) {
+      if (values.length > 0) {
         const obj: any = {};
         headers.forEach((header, index) => {
-          obj[header] = values[index];
+          obj[header] = values[index] !== undefined ? values[index] : "";
         });
         data.push(obj);
       }
@@ -163,15 +165,25 @@ export default function UnitDatabaseView() {
       return;
     }
 
+    // Normalize keys to lowercase and trim them to support any header casing (Kode, KODE, Nama, NAMA)
+    const normalized = parsed.map(item => {
+      const newItem: any = {};
+      Object.keys(item).forEach(key => {
+        const cleanKey = key.trim().toLowerCase();
+        newItem[cleanKey] = item[key];
+      });
+      return newItem;
+    });
+
     // Validate Kode & Nama
-    const missingFields = parsed.some(item => !item.kode || !item.nama);
+    const missingFields = normalized.some(item => !item.kode || !item.nama);
     if (missingFields) {
-      setUploadError("Validasi Gagal: Sebagian baris tidak memiliki kolom 'kode' atau 'nama' yang wajib diisi.");
+      setUploadError("Validasi Gagal: Sebagian baris tidak memiliki kolom 'kode' atau 'nama' yang wajib diisi. Pastikan berkas Anda memiliki header kolom 'kode' dan 'nama' (tidak sensitif huruf besar/kecil).");
       return;
     }
 
-    setParsedPreview(parsed);
-    setUploadSuccess(`Berhasil memuat ${parsed.length} baris data unit dari berkas. Silakan tinjau dan klik 'Simpan Impor' di bawah.`);
+    setParsedPreview(normalized);
+    setUploadSuccess(`Berhasil memuat ${normalized.length} baris data unit dari berkas. Silakan tinjau dan klik 'Simpan Impor' di bawah.`);
   };
 
   // Drag over handlers
