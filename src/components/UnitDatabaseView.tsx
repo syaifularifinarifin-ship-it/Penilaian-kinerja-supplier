@@ -165,13 +165,36 @@ export default function UnitDatabaseView() {
       return;
     }
 
-    // Normalize keys to lowercase and trim them to support any header casing (Kode, KODE, Nama, NAMA)
+    // Normalize keys to lowercase and trim them to support any header casing (Kode, KODE, Nama, NAMA, Kode Unit, Nama Unit, etc.)
     const normalized = parsed.map(item => {
       const newItem: any = {};
       Object.keys(item).forEach(key => {
         const cleanKey = key.trim().toLowerCase();
-        newItem[cleanKey] = item[key];
+        newItem[cleanKey] = item[key] !== undefined && item[key] !== null ? String(item[key]).trim() : "";
       });
+
+      // Smart fallback mapping for 'kode'
+      if (!newItem.kode) {
+        // Look for any key that contains 'kode', 'code', or is exactly 'id' or 'no'
+        const possibleKodeKey = Object.keys(newItem).find(k => 
+          k.includes("kode") || k.includes("code") || k === "id" || k === "no"
+        );
+        if (possibleKodeKey) {
+          newItem.kode = newItem[possibleKodeKey];
+        }
+      }
+
+      // Smart fallback mapping for 'nama'
+      if (!newItem.nama) {
+        // Look for any key that contains 'nama' or 'name' or 'unit' or 'supplier'
+        const possibleNamaKey = Object.keys(newItem).find(k => 
+          k.includes("nama") || k.includes("name") || k === "unit"
+        );
+        if (possibleNamaKey) {
+          newItem.nama = newItem[possibleNamaKey];
+        }
+      }
+
       return newItem;
     });
 
