@@ -387,7 +387,8 @@ const initialSystemUsers: SystemUser[] = [
     canManageUnits: true,
     canManageEvaluations: true,
     canManageUsers: true,
-    unitId: "" // All Units / Semua Unit
+    unitId: "", // All Units / Semua Unit
+    nid: "NID19870512"
   },
   {
     id: "user-2",
@@ -399,7 +400,8 @@ const initialSystemUsers: SystemUser[] = [
     canManageUnits: true,
     canManageEvaluations: true,
     canManageUsers: false,
-    unitId: "unit-1"
+    unitId: "unit-1",
+    nid: "NID19910405"
   },
   {
     id: "user-3",
@@ -411,7 +413,8 @@ const initialSystemUsers: SystemUser[] = [
     canManageUnits: false,
     canManageEvaluations: true,
     canManageUsers: false,
-    unitId: "unit-2"
+    unitId: "unit-2",
+    nid: "NID19930819"
   },
   {
     id: "user-4",
@@ -423,7 +426,8 @@ const initialSystemUsers: SystemUser[] = [
     canManageUnits: false,
     canManageEvaluations: false,
     canManageUsers: false,
-    unitId: "unit-3"
+    unitId: "unit-3",
+    nid: "NID19951231"
   }
 ];
 
@@ -476,7 +480,7 @@ export const SupplierProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
   const [isLoggedIn, setIsLoggedIn] = useState<boolean>(() => {
     const local = localStorage.getItem("sipeks_isLoggedIn");
-    return local ? local === "true" : true;
+    return local ? local === "true" : false;
   });
 
   const [activeTab, setActiveTab] = useState<string>("dashboard");
@@ -526,7 +530,8 @@ export const SupplierProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         nama: currentUser.nama,
         email: currentUser.email,
         role: currentUser.role,
-        unitId: currentUser.unitId
+        unitId: currentUser.unitId,
+        nid: currentUser.nid
       });
       if (currentUser.password) {
         setAppPassword(currentUser.password);

@@ -59,6 +59,7 @@ export interface UserProfile {
   email: string;
   role: string;
   unitId?: string;
+  nid?: string;
 }
 
 export interface SystemUser {
@@ -72,6 +73,7 @@ export interface SystemUser {
   canManageEvaluations: boolean;
   canManageUsers: boolean;
   unitId?: string;
+  nid?: string;
 }
 
 export interface Unit {

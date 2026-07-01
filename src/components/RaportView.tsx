@@ -5,6 +5,7 @@
 
 import React, { useState } from "react";
 import { useSuppliers } from "../context/SupplierContext";
+import Logo from "./Logo";
 import { 
   getPredikatAndColor, 
   ASPECT_LABELS, 
@@ -160,14 +161,14 @@ export default function RaportView() {
             
             {/* Raport Header */}
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b border-slate-200 dark:border-slate-800 pb-4 gap-4">
-              <div className="space-y-1">
-                <span className="text-[9px] font-bold tracking-wider text-[#0284c7] dark:text-sky-400 uppercase">
-                  Sistem Informasi Penilaian Kinerja Supplier (SIPEKS)
-                </span>
-                <h2 className="text-lg font-bold text-slate-800 dark:text-white uppercase tracking-tight">
-                  Raport Kinerja Mitra Kerja
-                </h2>
-                <p className="text-[10px] font-mono text-slate-400">No. Dok: RPT/PEMBANGKIT/{activeEval.tahun}/{activeEval.id.split("-")[1].toUpperCase()}</p>
+              <div className="space-y-3">
+                <Logo variant="print" height={42} />
+                <div className="space-y-1">
+                  <h2 className="text-lg font-bold text-slate-800 dark:text-white uppercase tracking-tight">
+                    Raport Kinerja Mitra Kerja
+                  </h2>
+                  <p className="text-[10px] font-mono text-slate-400">No. Dok: RPT/PEMBANGKIT/{activeEval.tahun}/{activeEval.id.split("-")[1]?.toUpperCase() || "RPT"}</p>
+                </div>
               </div>
               <div className="text-left sm:text-right bg-slate-50 dark:bg-slate-950 p-3 rounded border border-slate-200 dark:border-slate-800">
                 <p className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Periode Penilaian</p>

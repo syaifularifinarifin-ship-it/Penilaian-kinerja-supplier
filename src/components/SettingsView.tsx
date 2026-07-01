@@ -16,6 +16,7 @@ import {
   Key, 
   Mail, 
   UserCheck,
+  Fingerprint,
   Eye,
   EyeOff,
   Users,
@@ -53,6 +54,7 @@ export default function SettingsView() {
   const [profileEmail, setProfileEmail] = useState(userProfile.email);
   const [profileRole, setProfileRole] = useState(userProfile.role);
   const [profileUnitId, setProfileUnitId] = useState(userProfile.unitId || "");
+  const [profileNid, setProfileNid] = useState(userProfile.nid || "");
   
   const [profileSuccess, setProfileSuccess] = useState("");
   const [profileError, setProfileError] = useState("");
@@ -87,6 +89,7 @@ export default function SettingsView() {
   const [formCanEvaluations, setFormCanEvaluations] = useState(false);
   const [formCanUsers, setFormCanUsers] = useState(false);
   const [formUnitId, setFormUnitId] = useState("");
+  const [formNid, setFormNid] = useState("");
 
   const [formError, setFormError] = useState("");
   const [formSuccess, setFormSuccess] = useState("");
@@ -129,6 +132,7 @@ export default function SettingsView() {
     setFormCanEvaluations(user.canManageEvaluations);
     setFormCanUsers(user.canManageUsers);
     setFormUnitId(user.unitId || "");
+    setFormNid(user.nid || "");
     setIsFormOpen(true);
     setFormError("");
     setFormSuccess("");
@@ -145,6 +149,7 @@ export default function SettingsView() {
     setFormCanEvaluations(false);
     setFormCanUsers(false);
     setFormUnitId("");
+    setFormNid("");
     setIsFormOpen(true);
     setFormError("");
     setFormSuccess("");
@@ -182,7 +187,8 @@ export default function SettingsView() {
       canManageUnits: formCanUnits,
       canManageEvaluations: formCanEvaluations,
       canManageUsers: formCanUsers,
-      unitId: formUnitId
+      unitId: formUnitId,
+      nid: formNid.trim()
     };
 
     if (editingUser) {
@@ -224,7 +230,8 @@ export default function SettingsView() {
       nama: profileNama.trim(),
       email: profileEmail.trim(),
       role: profileRole.trim(),
-      unitId: profileUnitId
+      unitId: profileUnitId,
+      nid: profileNid.trim()
     });
 
     if (currentUser) {
@@ -233,7 +240,8 @@ export default function SettingsView() {
         nama: profileNama.trim(),
         email: profileEmail.trim(),
         role: profileRole.trim() as any,
-        unitId: profileUnitId
+        unitId: profileUnitId,
+        nid: profileNid.trim()
       };
       setCurrentUser(updatedUser);
       updateSystemUser(updatedUser);
@@ -358,11 +366,20 @@ export default function SettingsView() {
               <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">{userProfile.role}</p>
               <p className="text-xs text-slate-500 dark:text-slate-400 mt-2 font-medium break-all">{userProfile.email}</p>
 
-              <div className="mt-3.5 px-3 py-1.5 bg-indigo-50/50 dark:bg-indigo-950/20 rounded-md border border-indigo-100 dark:border-indigo-900/30 text-center inline-block">
-                <span className="text-[9px] font-bold text-indigo-400 dark:text-indigo-300 uppercase tracking-wider block">Unit Penugasan</span>
-                <span className="text-[11px] font-extrabold text-indigo-850 dark:text-indigo-200 mt-0.5 block">
-                  {units.find(u => u.id === userProfile.unitId)?.nama || "Semua Unit / Pusat"}
-                </span>
+              <div className="mt-3 flex flex-wrap justify-center gap-2">
+                <div className="px-3 py-1.5 bg-slate-50 dark:bg-slate-850 rounded-md border border-slate-150 dark:border-slate-800 text-center inline-block min-w-[100px]">
+                  <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider block">NID / NIP</span>
+                  <span className="text-[11px] font-mono font-bold text-slate-700 dark:text-slate-300 mt-0.5 block">
+                    {userProfile.nid || "-"}
+                  </span>
+                </div>
+
+                <div className="px-3 py-1.5 bg-indigo-50/50 dark:bg-indigo-950/20 rounded-md border border-indigo-100 dark:border-indigo-900/30 text-center inline-block min-w-[120px]">
+                  <span className="text-[9px] font-bold text-indigo-400 dark:text-indigo-300 uppercase tracking-wider block">Unit Penugasan</span>
+                  <span className="text-[11px] font-extrabold text-indigo-850 dark:text-indigo-200 mt-0.5 block">
+                    {units.find(u => u.id === userProfile.unitId)?.nama || "Semua Unit / Pusat"}
+                  </span>
+                </div>
               </div>
 
               <div className="mt-6 pt-6 border-t border-slate-100 dark:border-slate-800/80 space-y-3">
@@ -450,18 +467,34 @@ export default function SettingsView() {
                   </div>
                 </div>
 
-                 <div className="space-y-1">
-                  <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Alamat Email</label>
-                  <div className="relative">
-                    <Mail className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
-                    <input
-                      type="email"
-                      required
-                      value={profileEmail}
-                      onChange={(e) => setProfileEmail(e.target.value)}
-                      placeholder="nama@perusahaan.com"
-                      className="w-full pl-9 pr-3 py-1.5 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded focus:ring-1 focus:ring-indigo-500 focus:outline-hidden text-slate-900 dark:text-white"
-                    />
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Alamat Email</label>
+                    <div className="relative">
+                      <Mail className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
+                      <input
+                        type="email"
+                        required
+                        value={profileEmail}
+                        onChange={(e) => setProfileEmail(e.target.value)}
+                        placeholder="nama@perusahaan.com"
+                        className="w-full pl-9 pr-3 py-1.5 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded focus:ring-1 focus:ring-indigo-500 focus:outline-hidden text-slate-900 dark:text-white"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">NID / NIP Pegawai</label>
+                    <div className="relative">
+                      <Fingerprint className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
+                      <input
+                        type="text"
+                        value={profileNid}
+                        onChange={(e) => setProfileNid(e.target.value)}
+                        placeholder="Masukkan NID / NIP Pegawai"
+                        className="w-full pl-9 pr-3 py-1.5 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded focus:ring-1 focus:ring-indigo-500 focus:outline-hidden text-slate-900 dark:text-white"
+                      />
+                    </div>
                   </div>
                 </div>
 
@@ -697,20 +730,33 @@ export default function SettingsView() {
                   </div>
                 </div>
 
-                <div className="space-y-1">
-                  <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Unit Pembangkit Penugasan</label>
-                  <select
-                    value={formUnitId}
-                    onChange={(e) => setFormUnitId(e.target.value)}
-                    className="w-full px-3 py-1.5 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded focus:ring-1 focus:ring-indigo-500 focus:outline-hidden text-slate-900 dark:text-white"
-                  >
-                    <option value="">Semua Unit (Pusat / Seluruh Pembangkit)</option>
-                    {units.map((u) => (
-                      <option key={u.id} value={u.id}>
-                        {u.nama} ({u.kode})
-                      </option>
-                    ))}
-                  </select>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">NID / NIP Pegawai</label>
+                    <input
+                      type="text"
+                      value={formNid}
+                      onChange={(e) => setFormNid(e.target.value)}
+                      placeholder="Masukkan NID / NIP Pegawai"
+                      className="w-full px-3 py-1.5 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded focus:ring-1 focus:ring-indigo-500 focus:outline-hidden text-slate-900 dark:text-white"
+                    />
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Unit Pembangkit Penugasan</label>
+                    <select
+                      value={formUnitId}
+                      onChange={(e) => setFormUnitId(e.target.value)}
+                      className="w-full px-3 py-1.5 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded focus:ring-1 focus:ring-indigo-500 focus:outline-hidden text-slate-900 dark:text-white"
+                    >
+                      <option value="">Semua Unit (Pusat / Seluruh Pembangkit)</option>
+                      {units.map((u) => (
+                        <option key={u.id} value={u.id}>
+                          {u.nama} ({u.kode})
+                        </option>
+                      ))}
+                    </select>
+                  </div>
                 </div>
 
                 {/* Permissions Toggles */}
@@ -868,6 +914,12 @@ export default function SettingsView() {
                                     )}
                                   </div>
                                   <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1 truncate">{user.email}</p>
+                                  {user.nid && (
+                                    <div className="flex items-center gap-1 mt-0.5">
+                                      <span className="text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wide">NID:</span>
+                                      <span className="text-[10px] text-indigo-600 dark:text-indigo-400 font-mono font-bold">{user.nid}</span>
+                                    </div>
+                                  )}
                                 </div>
                               </div>
                             </td>

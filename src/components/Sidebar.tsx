@@ -5,6 +5,7 @@
 
 import React from "react";
 import { useSuppliers } from "../context/SupplierContext";
+import Logo from "./Logo";
 import { 
   LayoutDashboard, 
   ClipboardCheck, 
@@ -94,19 +95,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
       >
         {/* Branding Header */}
         <div className="flex items-center justify-between px-6 py-5 border-b border-[#0e5a84] bg-[#0a3f5e]">
-          <div className="flex items-center gap-2.5">
-            <div className="p-2 bg-sky-400 rounded-lg text-white shadow-xs">
-              <Zap className="w-5 h-5 fill-white stroke-sky-600 stroke-1" />
-            </div>
-            <div>
-              <h2 className="text-base font-extrabold tracking-tight text-white">
-                PKS PEMBANGKIT
-              </h2>
-              <p className="text-[9px] font-bold text-sky-200 uppercase tracking-widest leading-none mt-0.5">
-                Kinerja Supplier
-              </p>
-            </div>
-          </div>
+          <Logo variant="white" height={36} />
           
           {/* Mobile close button */}
           <button 

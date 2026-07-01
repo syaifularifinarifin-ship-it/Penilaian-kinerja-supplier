@@ -5,6 +5,7 @@
 
 import React, { useState, useEffect } from "react";
 import { useSuppliers } from "../context/SupplierContext";
+import Logo from "./Logo";
 import { 
   AspectScores, 
   ASPECT_WEIGHTS, 
@@ -27,7 +28,10 @@ import {
   Sparkles,
   Briefcase,
   FileText,
-  Cpu
+  Cpu,
+  Printer,
+  ArrowLeft,
+  Check
 } from "lucide-react";
 
 export default function InputPenilaianView() {
@@ -65,12 +69,13 @@ export default function InputPenilaianView() {
   });
 
   const [rekomendasi, setRekomendasi] = useState("");
-  const [evaluator, setEvaluator] = useState("Syaiful Arifin (Manajer Logistik)");
+  const [evaluator, setEvaluator] = useState(currentUser ? `${currentUser.nama} (${currentUser.role})` : "Syaiful Arifin (Manajer Logistik)");
   const [tanggalPenilaian, setTanggalPenilaian] = useState(new Date().toISOString().split("T")[0]);
   const [noPo, setNoPo] = useState("");
   const [deskripsiPo, setDeskripsiPo] = useState("");
   const [tanggalPo, setTanggalPo] = useState("");
   const [errorMsg, setErrorMsg] = useState("");
+  const [showPrintPreview, setShowPrintPreview] = useState(false);
 
   // Quick Inline Supplier registration
   const [isInlineSupOpen, setIsInlineSupOpen] = useState(false);
@@ -104,6 +109,7 @@ export default function InputPenilaianView() {
       setNoPo("");
       setDeskripsiPo("");
       setTanggalPo("");
+      setEvaluator(currentUser ? `${currentUser.nama} (${currentUser.role})` : "Syaiful Arifin (Manajer Logistik)");
       setScores({
         integritas: 4.0,
         kerjasama: 4.0,
@@ -115,7 +121,7 @@ export default function InputPenilaianView() {
         energi: 4.0,
       });
     }
-  }, [editingEvaluation, suppliers, units]);
+  }, [editingEvaluation, suppliers, units, currentUser]);
 
   // Set first supplier as default when suppliers load
   useEffect(() => {
@@ -268,6 +274,227 @@ export default function InputPenilaianView() {
     );
   }
 
+  // Find selected supplier for preview
+  const selectedSup = suppliers.find(s => s.id === supplierId);
+  // Find selected unit for preview
+  const selectedUnit = units.find(u => u.id === unitId);
+
+  if (showPrintPreview) {
+    return (
+      <div id="print-preview-container" className="space-y-6">
+        {/* Top Sticky Bar - No Print */}
+        <div className="bg-white dark:bg-slate-900 p-4 rounded-lg border border-slate-200 dark:border-slate-800 shadow-xs flex justify-between items-center no-print">
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => setShowPrintPreview(false)}
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-slate-600 hover:text-slate-800 dark:text-slate-350 dark:hover:text-white bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg cursor-pointer transition-all"
+            >
+              <ArrowLeft className="w-4 h-4" /> Kembali Edit
+            </button>
+            <div className="h-4 w-[1px] bg-slate-200 dark:bg-slate-800"></div>
+            <div>
+              <h2 className="text-sm font-black text-slate-800 dark:text-white">Mode Pratinjau Dokumen</h2>
+              <p className="text-[10px] text-slate-400 font-medium">Gunakan tombol cetak untuk menyimpan sebagai PDF atau mencetak fisik.</p>
+            </div>
+          </div>
+
+          <div className="flex gap-2">
+            <button
+              onClick={() => window.print()}
+              className="flex items-center gap-1.5 px-4 py-2 text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 rounded-lg shadow-xs cursor-pointer transition-all"
+            >
+              <Printer className="w-4 h-4" /> Cetak Sekarang (Print)
+            </button>
+          </div>
+        </div>
+
+        {/* Formal Paper Printable Container */}
+        <div className="bg-white text-slate-900 dark:bg-white dark:text-slate-900 rounded-lg border border-slate-250 p-8 sm:p-12 shadow-md max-w-4xl mx-auto space-y-6 print-container relative overflow-hidden">
+          {/* Top colored aesthetic bar */}
+          <div className="absolute top-0 left-0 right-0 h-1.5 bg-linear-to-r from-sky-400 via-sky-600 to-emerald-500"></div>
+
+          {/* SIPEKS / PLN Kop Surat */}
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b border-slate-300 pb-5 gap-4">
+            <div className="space-y-3">
+              <Logo variant="print" height={42} />
+              <div className="space-y-1">
+                <h1 className="text-xl font-extrabold uppercase tracking-tight text-slate-900 mt-1">
+                  Formulir Evaluasi Kinerja Supplier
+                </h1>
+                <p className="text-[10px] font-mono text-slate-500">No. Dok: EVL/FORM/{tahun}/{selectedSup?.nama.slice(0,3).toUpperCase() || "MITRA"}</p>
+              </div>
+            </div>
+            
+            <div className="text-left sm:text-right bg-slate-50 p-4 rounded-lg border border-slate-200 min-w-[200px]">
+              <p className="text-[9px] font-bold text-slate-500 uppercase tracking-wider">Periode Penilaian</p>
+              <p className="text-xs font-extrabold text-slate-800 mt-0.5">{periode}</p>
+              <p className="text-[10px] text-slate-500 mt-0.5 font-bold">Tahun Buku {tahun}</p>
+              {selectedUnit && (
+                <div className="mt-2 pt-2 border-t border-slate-200">
+                  <span className="inline-block text-[9px] font-extrabold bg-indigo-50 text-indigo-700 px-2 py-0.5 rounded border border-indigo-100 uppercase tracking-wider">
+                    {selectedUnit.nama} ({selectedUnit.kode})
+                  </span>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Identity & Profile Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-xs bg-slate-50/75 p-5 rounded-lg border border-slate-200">
+            <div className="space-y-3">
+              <h3 className="font-extrabold text-slate-500 uppercase tracking-wider text-[9px] border-b border-slate-200 pb-1">
+                Profil Mitra Penyedia
+              </h3>
+              <div className="space-y-1.5 text-slate-800">
+                <p className="text-xs font-bold flex items-center gap-1.5">
+                  <Building2 className="w-4 h-4 text-slate-400 shrink-0" />
+                  {selectedSup?.nama || "Mitra Belum Dipilih"}
+                </p>
+                <p className="text-slate-500 font-medium pl-5 text-[11px]">{selectedSup?.kategoriBisnis || "Kategori Kerja"}</p>
+                <p className="text-slate-600 pl-5 text-[11px] flex items-start gap-1 leading-relaxed">
+                  <span className="font-semibold text-slate-400">Alamat:</span> {selectedSup?.alamat || "-"}
+                </p>
+              </div>
+            </div>
+
+            <div className="space-y-3 md:border-l border-slate-200 md:pl-6">
+              <h3 className="font-extrabold text-slate-500 uppercase tracking-wider text-[9px] border-b border-slate-200 pb-1">
+                Keterangan Penilaian
+              </h3>
+              <div className="space-y-1.5 text-slate-800 text-[11px]">
+                <p><span className="font-bold text-slate-400 uppercase tracking-wide text-[9px] inline-block w-24">Evaluator:</span> <span className="font-semibold text-slate-800">{evaluator}</span></p>
+                <p><span className="font-bold text-slate-400 uppercase tracking-wide text-[9px] inline-block w-24">Tanggal Input:</span> <span className="font-mono font-semibold text-slate-800">{tanggalPenilaian}</span></p>
+                <p><span className="font-bold text-slate-400 uppercase tracking-wide text-[9px] inline-block w-24">Kontak PIC:</span> <span className="font-semibold text-slate-800">{selectedSup?.kontak || "-"} ({selectedSup?.telepon || "-"})</span></p>
+              </div>
+            </div>
+          </div>
+
+          {/* PO Information (If Filled) */}
+          {(noPo || deskripsiPo || tanggalPo) && (
+            <div className="bg-sky-50/50 p-4 rounded-lg border border-sky-150 grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
+              {noPo && (
+                <div className="space-y-0.5">
+                  <p className="font-bold text-slate-400 uppercase tracking-wider text-[8px]">Nomor Purchase Order (PO)</p>
+                  <p className="font-bold text-slate-800 text-[11px] font-mono">{noPo}</p>
+                </div>
+              )}
+              {tanggalPo && (
+                <div className="space-y-0.5">
+                  <p className="font-bold text-slate-400 uppercase tracking-wider text-[8px]">Tanggal Purchase Order</p>
+                  <p className="font-bold text-slate-800 text-[11px] font-mono">{tanggalPo}</p>
+                </div>
+              )}
+              {deskripsiPo && (
+                <div className="space-y-0.5 md:col-span-1">
+                  <p className="font-bold text-slate-400 uppercase tracking-wider text-[8px]">Deskripsi Pekerjaan PO</p>
+                  <p className="font-medium text-slate-700 text-[11px] truncate" title={deskripsiPo}>{deskripsiPo}</p>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Kriteria Table */}
+          <div className="space-y-3">
+            <h3 className="font-extrabold text-[10px] text-slate-700 uppercase tracking-wider">
+              Daftar Penilaian Berdasarkan 8 Kriteria Aspek
+            </h3>
+
+            <div className="border border-slate-300 rounded-lg overflow-hidden text-xs">
+              <div className="grid grid-cols-12 bg-slate-50 p-3 font-bold border-b border-slate-300 text-slate-500 text-[9px] uppercase tracking-wider">
+                <div className="col-span-5 sm:col-span-6">Aspek Penilaian</div>
+                <div className="col-span-2 text-center">Skor (1.0 - 5.0)</div>
+                <div className="col-span-2 text-center">Bobot</div>
+                <div className="col-span-3 sm:col-span-2 text-right text-sky-700 font-bold">Nilai Kontribusi</div>
+              </div>
+
+              <div className="divide-y divide-slate-200">
+                {(Object.keys(scores) as AspectKey[]).map((key) => {
+                  const label = ASPECT_LABELS[key];
+                  const weight = ASPECT_WEIGHTS[key];
+                  const score = scores[key] || 0;
+                  const contrib = Math.round((score * weight) * 100) / 100;
+
+                  return (
+                    <div key={key} className="grid grid-cols-12 p-3 items-center bg-white">
+                      <div className="col-span-5 sm:col-span-6 pr-2">
+                        <p className="font-bold text-slate-800 text-xs">{label}</p>
+                        <p className="text-[10px] text-slate-400 leading-relaxed mt-0.5">{ASPECT_DESCRIPTIONS[key].replace(/\n/g, "; ")}</p>
+                      </div>
+                      <div className="col-span-2 text-center font-bold text-slate-850 font-mono">{score.toFixed(1)}</div>
+                      <div className="col-span-2 text-center text-slate-500 font-bold">{weight * 100}%</div>
+                      <div className="col-span-3 sm:col-span-2 text-right font-black text-slate-900 font-mono">{contrib.toFixed(2)}</div>
+                    </div>
+                  );
+                })}
+
+                {/* Total Summary Row */}
+                <div className="grid grid-cols-12 p-4 items-center bg-slate-50/80 font-bold border-t border-slate-300 text-slate-900">
+                  <div className="col-span-5 sm:col-span-6 text-sm font-extrabold uppercase text-slate-700">
+                    Akumulasi Nilai Akhir (Tertimbang)
+                  </div>
+                  <div className="col-span-2 text-center"></div>
+                  <div className="col-span-2 text-center font-black text-slate-500">100%</div>
+                  <div className="col-span-3 sm:col-span-2 text-right text-lg font-black text-[#0284c7] font-mono">
+                    {currentNilaiAkhir.toFixed(2)}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Peringkat Kelayakan Badge in Document */}
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center p-4 bg-slate-50 border border-slate-300 rounded-lg gap-4">
+            <div>
+              <p className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Peringkat & Kategori Kelayakan</p>
+              <h4 className={`text-base font-black uppercase mt-1 ${color}`}>
+                {predikat}
+              </h4>
+            </div>
+            <div className="text-[10px] text-slate-500 max-w-md leading-relaxed italic">
+              Predikat ini merupakan klasifikasi penilaian kelayakan kerja mitra yang sah sesuai regulasi internal PLN NPS.
+            </div>
+          </div>
+
+          {/* Recommendations Box */}
+          <div className="space-y-3">
+            <h3 className="font-extrabold text-[10px] text-slate-700 uppercase tracking-wider">
+              Rekomendasi Manajerial & Catatan Tindak Lanjut
+            </h3>
+            <div className="p-4 bg-slate-50/50 rounded-lg border border-slate-300 text-xs text-slate-700 italic leading-relaxed shadow-xs min-h-[60px]">
+              {rekomendasi.trim() ? `“${rekomendasi}”` : `“Kinerja dinilai ${predikat} dengan rata-rata tertimbang ${currentNilaiAkhir.toFixed(2)}.”`}
+            </div>
+          </div>
+
+          {/* Signatures Row */}
+          <div className="grid grid-cols-2 pt-10 border-t border-slate-200 gap-12 text-xs">
+            <div className="space-y-16">
+              <p className="text-slate-500 font-medium">Pihak Pertama,<br /><span className="font-bold text-slate-900">PT PLN NUSANTARA POWER SERVICES</span></p>
+              <div className="space-y-1">
+                <p className="font-bold text-slate-950 underline">{evaluator.split(" (")[0]}</p>
+                <p className="text-[10px] text-slate-500">Evaluator / Penilai Mutu</p>
+                <p className="text-[9px] text-slate-400 font-mono">NID / NIP: {currentUser?.nid || "-"}</p>
+              </div>
+            </div>
+
+            <div className="space-y-16 text-right">
+              <p className="text-slate-500 font-medium">Pihak Kedua,<br /><span className="font-bold text-slate-900">{selectedSup?.nama || "Nama Supplier"}</span></p>
+              <div className="space-y-1">
+                <p className="font-bold text-slate-950 underline">{selectedSup?.kontak || "_________________________"}</p>
+                <p className="text-[10px] text-slate-500">Pimpinan / Perwakilan Mitra</p>
+                <p className="text-[9px] text-slate-400">Tanggal Pengesahan: {tanggalPenilaian}</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Document Footer Note */}
+          <div className="text-center pt-8 border-t border-slate-150 text-[9px] text-slate-400 uppercase tracking-wider font-medium">
+            Dokumen ini diunduh secara resmi melalui Sistem Informasi Penilaian Kinerja Supplier (SIPEKS)
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div id="input-penilaian-view" className="space-y-6">
       
@@ -284,14 +511,31 @@ export default function InputPenilaianView() {
               : "Masukkan skor indikator kinerja supplier berdasarkan kriteria aspek dengan bobot tetap pembangkit."}
           </p>
         </div>
-        {editingEvaluation && (
+        <div className="flex items-center gap-2">
           <button 
-            onClick={handleCancelEdit}
-            className="flex items-center gap-1 text-[11px] font-bold text-rose-600 hover:text-rose-700 bg-rose-50 dark:bg-rose-950/30 px-2.5 py-1.5 rounded border border-rose-200 dark:border-rose-900 cursor-pointer"
+            type="button"
+            onClick={() => {
+              if (!supplierId) {
+                setErrorMsg("Harap pilih supplier terlebih dahulu untuk melihat pratinjau cetak.");
+                return;
+              }
+              setErrorMsg("");
+              setShowPrintPreview(true);
+            }}
+            className="flex items-center gap-1.5 text-[11px] font-bold text-emerald-700 hover:text-emerald-800 bg-emerald-50 dark:bg-emerald-950/30 px-2.5 py-1.5 rounded border border-emerald-250 dark:border-emerald-900/40 cursor-pointer transition-colors"
           >
-            <X className="w-3.5 h-3.5" /> Batal Edit
+            <Printer className="w-3.5 h-3.5" /> Pratinjau & Cetak
           </button>
-        )}
+          {editingEvaluation && (
+            <button 
+              type="button"
+              onClick={handleCancelEdit}
+              className="flex items-center gap-1 text-[11px] font-bold text-rose-600 hover:text-rose-700 bg-rose-50 dark:bg-rose-950/30 px-2.5 py-1.5 rounded border border-rose-200 dark:border-rose-900 cursor-pointer"
+            >
+              <X className="w-3.5 h-3.5" /> Batal Edit
+            </button>
+          )}
+        </div>
       </div>
 
       {errorMsg && (
@@ -645,6 +889,21 @@ export default function InputPenilaianView() {
               className="px-4 py-2 text-xs font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded cursor-pointer transition-colors border border-slate-200 dark:border-slate-800"
             >
               Kembali ke Rekap
+            </button>
+            <button 
+              type="button"
+              onClick={() => {
+                if (!supplierId) {
+                  setErrorMsg("Harap pilih supplier terlebih dahulu untuk melihat pratinjau cetak.");
+                  return;
+                }
+                setErrorMsg("");
+                setShowPrintPreview(true);
+              }}
+              className="flex items-center gap-1.5 px-4 py-2 text-xs font-semibold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/20 dark:text-emerald-400 rounded cursor-pointer transition-colors border border-emerald-200 dark:border-emerald-900/40"
+            >
+              <Printer className="w-4 h-4" />
+              Pratinjau Cetak
             </button>
             <button 
               type="submit"
