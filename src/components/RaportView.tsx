@@ -11,7 +11,10 @@ import {
   ASPECT_LABELS, 
   ASPECT_WEIGHTS, 
   ASPECT_DESCRIPTIONS, 
-  AspectKey 
+  AspectKey,
+  Evaluation,
+  AspectScores,
+  calculateFinalScore
 } from "../types";
 import { 
   FileText, 
@@ -46,12 +49,67 @@ export default function RaportView() {
   // Find currently selected supplier profile
   const currentSupplier = suppliers.find(s => s.id === selectedSupplierIdForRaport) || suppliers[0];
 
-  // Find evaluation corresponding to selected supplier, year and period
-  const activeEval = evaluations.find(e => 
-    e.supplierId === (currentSupplier?.id || "") && 
-    e.tahun === selectedYear &&
-    (selectedPeriode === "Semua" ? e.periode === "Semester 1" : e.periode === selectedPeriode)
-  );
+  // Calculate evaluation or average evaluation corresponding to selected supplier, year and period
+  let activeEval: Evaluation | null = null;
+
+  if (selectedPeriode === "Semua") {
+    const supplierEvals = evaluations.filter(e => 
+      e.supplierId === (currentSupplier?.id || "") && 
+      e.tahun === selectedYear
+    );
+
+    if (supplierEvals.length > 0) {
+      // Calculate mathematical average score for each aspect
+      const avgScores: AspectScores = {
+        integritas: 0,
+        kerjasama: 0,
+        mutu: 0,
+        waktu: 0,
+        harga: 0,
+        k3l: 0,
+        keamanan: 0,
+        energi: 0,
+      };
+
+      supplierEvals.forEach(e => {
+        Object.keys(avgScores).forEach(key => {
+          const k = key as AspectKey;
+          avgScores[k] += e.scores[k] || 0;
+        });
+      });
+
+      Object.keys(avgScores).forEach(key => {
+        const k = key as AspectKey;
+        avgScores[k] = Math.round((avgScores[k] / supplierEvals.length) * 100) / 100;
+      });
+
+      const avgNilaiAkhir = calculateFinalScore(avgScores);
+      const { predikat } = getPredikatAndColor(avgNilaiAkhir);
+
+      activeEval = {
+        id: `avg-${currentSupplier?.id || "sup"}-${selectedYear}`,
+        supplierId: currentSupplier?.id || "",
+        supplierNama: currentSupplier?.nama || "",
+        tahun: selectedYear,
+        periode: `Rata-rata Semua Periode (${supplierEvals.length} Evaluasi)`,
+        scores: avgScores,
+        nilaiAkhir: avgNilaiAkhir,
+        predikat: predikat as any,
+        rekomendasi: supplierEvals.map(e => `[${e.periode}]: ${e.rekomendasi || "-"}`).join("\n"),
+        evaluator: "Sistem (Konsolidasi Multi-Periode)",
+        tanggalPenilaian: new Date().toLocaleDateString('id-ID', { year: 'numeric', month: 'long', day: 'numeric' }),
+        noPo: supplierEvals.map(e => e.noPo).filter(Boolean).join(", ") || "-",
+        deskripsiPo: `Konsolidasi nilai kinerja dari ${supplierEvals.length} kontrak/PO di tahun ${selectedYear}`,
+        tanggalPo: "-"
+      };
+    }
+  } else {
+    activeEval = evaluations.find(e => 
+      e.supplierId === (currentSupplier?.id || "") && 
+      e.tahun === selectedYear &&
+      e.periode === selectedPeriode
+    ) || null;
+  }
 
   const handlePrint = () => {
     window.print();
@@ -109,10 +167,11 @@ export default function RaportView() {
           <div className="flex items-center gap-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded px-2.5 py-1.5 text-xs">
             <Calendar className="w-4 h-4 text-slate-400" />
             <select
-              value={selectedPeriode === "Semua" ? "Semester 1" : selectedPeriode}
+              value={selectedPeriode}
               onChange={(e) => setSelectedPeriode(e.target.value)}
               className="bg-transparent border-none text-slate-700 dark:text-slate-200 font-bold focus:ring-0 outline-none text-xs"
             >
+              <option value="Semua">Rata-rata Semua Periode</option>
               <option value="Semester 1">Semester 1</option>
               <option value="Semester 2">Semester 2</option>
               <option value="Tahunan">Tahunan</option>
@@ -140,7 +199,7 @@ export default function RaportView() {
           <div className="max-w-md mx-auto space-y-1">
             <h3 className="text-sm font-bold text-slate-800 dark:text-white uppercase tracking-wider">Raport Belum Ditemukan</h3>
             <p className="text-xs text-slate-500">
-              Belum ada penilaian kinerja terdaftar untuk <span className="font-bold text-slate-800 dark:text-slate-200">{currentSupplier?.nama}</span> pada periode <span className="font-semibold text-sky-600">{selectedPeriode === "Semua" ? "Semester 1" : selectedPeriode} Tahun {selectedYear}</span>.
+              Belum ada penilaian kinerja terdaftar untuk <span className="font-bold text-slate-800 dark:text-slate-200">{currentSupplier?.nama}</span> pada periode <span className="font-semibold text-sky-600">{selectedPeriode === "Semua" ? "Semua Periode (Rata-rata)" : selectedPeriode} Tahun {selectedYear}</span>.
             </p>
           </div>
           <button
