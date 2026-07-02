@@ -167,35 +167,55 @@ export default function UnitDatabaseView() {
 
     // Normalize keys to lowercase and trim them to support any header casing (Kode, KODE, Nama, NAMA, Kode Unit, Nama Unit, etc.)
     const normalized = parsed.map(item => {
-      const newItem: any = {};
-      Object.keys(item).forEach(key => {
-        const cleanKey = key.trim().toLowerCase();
-        newItem[cleanKey] = item[key] !== undefined && item[key] !== null ? String(item[key]).trim() : "";
+      const originalKeys = Object.keys(item);
+      
+      let finalKode = "";
+      let finalNama = "";
+
+      // 1. Find the best matching key for Unit Code (Kode)
+      // Look for exact matches (ignoring non-alphanumeric chars)
+      const exactKodeKey = originalKeys.find(key => {
+        const k = key.trim().toLowerCase().replace(/[^a-z0-9]/g, '');
+        return k === "kode" || k === "code" || k === "kd" || k === "id" || k === "no";
       });
 
-      // Smart fallback mapping for 'kode'
-      if (!newItem.kode) {
-        // Look for any key that contains 'kode', 'code', or is exactly 'id' or 'no'
-        const possibleKodeKey = Object.keys(newItem).find(k => 
-          k.includes("kode") || k.includes("code") || k === "id" || k === "no"
-        );
-        if (possibleKodeKey) {
-          newItem.kode = newItem[possibleKodeKey];
-        }
+      // Fuzzy lookup for Kode-related keywords
+      const fuzzyKodeKey = exactKodeKey || originalKeys.find(key => {
+        const k = key.trim().toLowerCase();
+        const hasKodeWord = k.includes("kode") || k.includes("code") || k.includes("kd") || k.includes("id") || k.includes("no");
+        const hasNamaWord = k.includes("nama") || k.includes("name");
+        return hasKodeWord && !hasNamaWord;
+      });
+
+      // 2. Find the best matching key for Unit Name (Nama)
+      // Look for exact matches (ignoring non-alphanumeric chars)
+      const exactNamaKey = originalKeys.find(key => {
+        if (key === fuzzyKodeKey) return false;
+        const k = key.trim().toLowerCase().replace(/[^a-z0-9]/g, '');
+        return k === "nama" || k === "name" || k === "pembangkit" || k === "unit";
+      });
+
+      // Fuzzy lookup for Nama-related keywords (excluding whatever was matched as code)
+      const fuzzyNamaKey = exactNamaKey || originalKeys.find(key => {
+        if (key === fuzzyKodeKey) return false;
+        const k = key.trim().toLowerCase();
+        return k.includes("nama") || k.includes("name") || k.includes("pembangkit") || k.includes("unit") || k.includes("keterangan") || k.includes("desc");
+      });
+
+      // Fallback if no specific key is found for name (pick first non-code key)
+      const fallbackNamaKey = fuzzyNamaKey || originalKeys.find(key => key !== fuzzyKodeKey);
+
+      if (fuzzyKodeKey) {
+        finalKode = String(item[fuzzyKodeKey] !== undefined && item[fuzzyKodeKey] !== null ? item[fuzzyKodeKey] : "").trim();
+      }
+      if (fallbackNamaKey) {
+        finalNama = String(item[fallbackNamaKey] !== undefined && item[fallbackNamaKey] !== null ? item[fallbackNamaKey] : "").trim();
       }
 
-      // Smart fallback mapping for 'nama'
-      if (!newItem.nama) {
-        // Look for any key that contains 'nama' or 'name' or 'unit' or 'supplier'
-        const possibleNamaKey = Object.keys(newItem).find(k => 
-          k.includes("nama") || k.includes("name") || k === "unit"
-        );
-        if (possibleNamaKey) {
-          newItem.nama = newItem[possibleNamaKey];
-        }
-      }
-
-      return newItem;
+      return {
+        kode: finalKode,
+        nama: finalNama
+      };
     });
 
     // Filter out completely empty or invalid/incomplete rows
@@ -207,7 +227,7 @@ export default function UnitDatabaseView() {
     const invalidRows = nonEmptyRows.filter(item => !item.kode || !item.nama);
 
     if (validRows.length === 0) {
-      setUploadError("Validasi Gagal: Tidak ditemukan baris data yang valid dengan kolom 'kode' dan 'nama'. Pastikan berkas Anda memiliki header kolom 'kode' dan 'nama' (tidak sensitif huruf besar/kecil).");
+      setUploadError("Validasi Gagal: Tidak ditemukan baris data yang valid dengan kolom 'kode' dan 'nama'. Pastikan berkas Anda memiliki header kolom 'kode' dan 'nama' (tidak sensitif huruf besar/kecil) di baris pertama atau baris awal tabel.");
       return;
     }
 
@@ -250,7 +270,7 @@ export default function UnitDatabaseView() {
     }
   };
 
-  // Process File
+  // Process File with Resilient Header Selection
   const handleFile = (file: File) => {
     const reader = new FileReader();
     const extension = file.name.split(".").pop()?.toLowerCase();
@@ -263,7 +283,60 @@ export default function UnitDatabaseView() {
           const workbook = XLSX.read(data, { type: "array" });
           const firstSheetName = workbook.SheetNames[0];
           const worksheet = workbook.Sheets[firstSheetName];
-          const parsed = XLSX.utils.sheet_to_json(worksheet);
+          
+          // Get all rows as dynamic array of arrays
+          const rows = XLSX.utils.sheet_to_json(worksheet, { header: 1 }) as any[][];
+          
+          // Scan first 15 rows to find the best table header row
+          let headerRowIndex = -1;
+          let foundHeaders: string[] = [];
+          
+          for (let r = 0; r < Math.min(rows.length, 15); r++) {
+            const row = rows[r];
+            if (!row || !Array.isArray(row)) continue;
+            
+            const potentialHeaders = row.map(cell => String(cell || "").trim().toLowerCase());
+            
+            // A valid table header row usually contains keywords for code/kode/kd and name/nama/unit
+            const hasKode = potentialHeaders.some(h => 
+              h === "kode" || h === "code" || h === "kd" || h === "id" || 
+              h.includes("kode") || h.includes("code") || h.includes("kd") || h.includes("id")
+            );
+            
+            const hasNama = potentialHeaders.some(h => 
+              h === "nama" || h === "name" || h === "unit" || h === "pembangkit" ||
+              h.includes("nama") || h.includes("name") || h.includes("unit") || h.includes("pembangkit")
+            );
+            
+            if (hasKode && hasNama) {
+              headerRowIndex = r;
+              foundHeaders = row.map(cell => String(cell || "").trim());
+              break;
+            }
+          }
+          
+          let parsed: any[] = [];
+          if (headerRowIndex !== -1 && foundHeaders.length > 0) {
+            // Build key-value objects starting after the header row
+            for (let r = headerRowIndex + 1; r < rows.length; r++) {
+              const row = rows[r];
+              if (!row || !Array.isArray(row)) continue;
+              
+              // Skip empty rows
+              if (row.some(cell => cell !== undefined && cell !== null && String(cell).trim() !== "")) {
+                const obj: any = {};
+                foundHeaders.forEach((header, colIndex) => {
+                  if (header) {
+                    obj[header] = row[colIndex] !== undefined && row[colIndex] !== null ? row[colIndex] : "";
+                  }
+                });
+                parsed.push(obj);
+              }
+            }
+          } else {
+            // Fallback: use standard sheet_to_json if no explicit header row detected
+            parsed = XLSX.utils.sheet_to_json(worksheet);
+          }
           
           processParsedData(parsed);
         } catch (err: any) {
