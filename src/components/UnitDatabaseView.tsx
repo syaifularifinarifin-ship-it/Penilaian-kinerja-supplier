@@ -198,15 +198,26 @@ export default function UnitDatabaseView() {
       return newItem;
     });
 
-    // Validate Kode & Nama
-    const missingFields = normalized.some(item => !item.kode || !item.nama);
-    if (missingFields) {
-      setUploadError("Validasi Gagal: Sebagian baris tidak memiliki kolom 'kode' atau 'nama' yang wajib diisi. Pastikan berkas Anda memiliki header kolom 'kode' dan 'nama' (tidak sensitif huruf besar/kecil).");
+    // Filter out completely empty or invalid/incomplete rows
+    const nonEmptyRows = normalized.filter(item => {
+      return Object.values(item).some(val => String(val).trim() !== "");
+    });
+
+    const validRows = nonEmptyRows.filter(item => item.kode && item.nama);
+    const invalidRows = nonEmptyRows.filter(item => !item.kode || !item.nama);
+
+    if (validRows.length === 0) {
+      setUploadError("Validasi Gagal: Tidak ditemukan baris data yang valid dengan kolom 'kode' dan 'nama'. Pastikan berkas Anda memiliki header kolom 'kode' dan 'nama' (tidak sensitif huruf besar/kecil).");
       return;
     }
 
-    setParsedPreview(normalized);
-    setUploadSuccess(`Berhasil memuat ${normalized.length} baris data unit dari berkas. Silakan tinjau dan klik 'Simpan Impor' di bawah.`);
+    setParsedPreview(validRows);
+    
+    if (invalidRows.length > 0) {
+      setUploadSuccess(`Berhasil memuat ${validRows.length} baris data unit (${invalidRows.length} baris kosong/tidak lengkap diabaikan). Silakan tinjau dan klik 'Simpan Impor' di bawah.`);
+    } else {
+      setUploadSuccess(`Berhasil memuat ${validRows.length} baris data unit dari berkas. Silakan tinjau dan klik 'Simpan Impor' di bawah.`);
+    }
   };
 
   // Drag over handlers
