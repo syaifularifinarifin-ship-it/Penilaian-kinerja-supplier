@@ -154,6 +154,172 @@ export default function UnitDatabaseView() {
     return data;
   };
 
+  // Extract units in an extremely resilient and smart manner, supporting arrays of objects or raw rows
+  const extractUnitsResilient = (rawData: any[]): { kode: string; nama: string }[] => {
+    if (!rawData || rawData.length === 0) return [];
+
+    const rows: any[][] = [];
+    const isArrayOfArrays = Array.isArray(rawData[0]);
+    
+    if (isArrayOfArrays) {
+      rawData.forEach((row: any) => {
+        if (Array.isArray(row)) {
+          rows.push(row.map(cell => (cell !== undefined && cell !== null ? String(cell).trim() : "")));
+        }
+      });
+    } else {
+      const allKeysSet = new Set<string>();
+      rawData.forEach(item => {
+        if (item && typeof item === "object") {
+          Object.keys(item).forEach(k => allKeysSet.add(k));
+        }
+      });
+      const keys = Array.from(allKeysSet);
+      if (keys.length > 0) {
+        rows.push(keys);
+        rawData.forEach(item => {
+          if (item && typeof item === "object") {
+            rows.push(keys.map(key => {
+              const val = item[key];
+              return val !== undefined && val !== null ? String(val).trim() : "";
+            }));
+          }
+        });
+      }
+    }
+
+    const cleanRows = rows.filter(row => row.some(cell => cell !== ""));
+    if (cleanRows.length === 0) return [];
+
+    let headerRowIndex = -1;
+    let kodeColIdx = -1;
+    let namaColIdx = -1;
+
+    for (let r = 0; r < Math.min(cleanRows.length, 15); r++) {
+      const row = cleanRows[r];
+      let kIdx = -1;
+      let nIdx = -1;
+
+      for (let c = 0; c < row.length; c++) {
+        const val = row[c].toLowerCase().replace(/[^a-z0-9]/g, '');
+        if (val === "kode" || val === "code" || val === "kd" || val === "kdunit" || val === "kodeunit") {
+          kIdx = c;
+        }
+        if (val === "nama" || val === "name" || val === "namaunit" || val === "unitnama" || val === "pembangkit") {
+          nIdx = c;
+        }
+      }
+
+      if (kIdx === -1 || nIdx === -1) {
+        for (let c = 0; c < row.length; c++) {
+          const val = row[c].toLowerCase();
+          if (kIdx === -1 && (val.includes("kode") || val.includes("code") || val === "kd" || val === "id")) {
+            kIdx = c;
+          }
+          if (nIdx === -1 && c !== kIdx && (val.includes("nama") || val.includes("name") || val.includes("pembangkit") || val === "unit" || val.includes("unit"))) {
+            nIdx = c;
+          }
+        }
+      }
+
+      if (kIdx !== -1 && nIdx !== -1) {
+        headerRowIndex = r;
+        kodeColIdx = kIdx;
+        namaColIdx = nIdx;
+        break;
+      }
+    }
+
+    if (kodeColIdx === -1 || namaColIdx === -1) {
+      const maxCols = Math.max(...cleanRows.map(r => r.length));
+      if (maxCols >= 2) {
+        const colStats = Array.from({ length: maxCols }, (_, c) => {
+          let nonEmptyCount = 0;
+          let totalLen = 0;
+          const vals = new Set<string>();
+          
+          cleanRows.forEach(row => {
+            if (row[c]) {
+              nonEmptyCount++;
+              totalLen += row[c].length;
+              vals.add(row[c]);
+            }
+          });
+
+          return {
+            index: c,
+            avgLen: nonEmptyCount > 0 ? totalLen / nonEmptyCount : 999,
+            uniqueCount: vals.size,
+            nonEmptyCount
+          };
+        });
+
+        const sortedByLen = [...colStats]
+          .filter(s => s.nonEmptyCount > 0)
+          .sort((a, b) => a.avgLen - b.avgLen);
+
+        if (sortedByLen.length >= 2) {
+          let potentialKodeCol = sortedByLen[0];
+          
+          const firstColIsSeq = cleanRows.slice(0, 5).every((row) => {
+            if (potentialKodeCol.index >= row.length) return true;
+            const val = row[potentialKodeCol.index];
+            return !isNaN(Number(val)) || val === "";
+          });
+
+          if (firstColIsSeq && sortedByLen.length >= 3) {
+            potentialKodeCol = sortedByLen[1];
+            namaColIdx = sortedByLen.find(s => s.index !== potentialKodeCol.index && s.index !== sortedByLen[0].index)?.index ?? sortedByLen[2].index;
+            kodeColIdx = potentialKodeCol.index;
+          } else {
+            kodeColIdx = potentialKodeCol.index;
+            namaColIdx = sortedByLen[1].index;
+          }
+        } else if (sortedByLen.length === 1) {
+          kodeColIdx = sortedByLen[0].index;
+          namaColIdx = sortedByLen[0].index;
+        }
+      } else {
+        kodeColIdx = 0;
+        namaColIdx = 0;
+      }
+      headerRowIndex = -1;
+    }
+
+    const dataStartIdx = headerRowIndex !== -1 ? headerRowIndex + 1 : 0;
+    const result: { kode: string; nama: string }[] = [];
+
+    for (let r = dataStartIdx; r < cleanRows.length; r++) {
+      const row = cleanRows[r];
+      let kVal = kodeColIdx < row.length ? row[kodeColIdx] : "";
+      let nVal = namaColIdx < row.length ? row[namaColIdx] : "";
+
+      if (!kVal && !nVal) continue;
+
+      if (kVal.toLowerCase() === "kode" || kVal.toLowerCase() === "code") continue;
+
+      if (!kVal && nVal) {
+        kVal = nVal
+          .toUpperCase()
+          .replace(/[^A-Z0-9\s]/g, "")
+          .trim()
+          .replace(/\s+/g, "-")
+          .substring(0, 15);
+      }
+
+      if (kVal && !nVal) {
+        nVal = kVal;
+      }
+
+      result.push({
+        kode: kVal,
+        nama: nVal
+      });
+    }
+
+    return result;
+  };
+
   // Process Parsed Data for Validation & Preview
   const processParsedData = (parsed: any[]) => {
     setUploadError("");
@@ -165,79 +331,15 @@ export default function UnitDatabaseView() {
       return;
     }
 
-    // Normalize keys to lowercase and trim them to support any header casing (Kode, KODE, Nama, NAMA, Kode Unit, Nama Unit, etc.)
-    const normalized = parsed.map(item => {
-      const originalKeys = Object.keys(item);
-      
-      let finalKode = "";
-      let finalNama = "";
+    const validated = extractUnitsResilient(parsed);
 
-      // 1. Find the best matching key for Unit Code (Kode)
-      // Look for exact matches (ignoring non-alphanumeric chars)
-      const exactKodeKey = originalKeys.find(key => {
-        const k = key.trim().toLowerCase().replace(/[^a-z0-9]/g, '');
-        return k === "kode" || k === "code" || k === "kd" || k === "id" || k === "no";
-      });
-
-      // Fuzzy lookup for Kode-related keywords
-      const fuzzyKodeKey = exactKodeKey || originalKeys.find(key => {
-        const k = key.trim().toLowerCase();
-        const hasKodeWord = k.includes("kode") || k.includes("code") || k.includes("kd") || k.includes("id") || k.includes("no");
-        const hasNamaWord = k.includes("nama") || k.includes("name");
-        return hasKodeWord && !hasNamaWord;
-      });
-
-      // 2. Find the best matching key for Unit Name (Nama)
-      // Look for exact matches (ignoring non-alphanumeric chars)
-      const exactNamaKey = originalKeys.find(key => {
-        if (key === fuzzyKodeKey) return false;
-        const k = key.trim().toLowerCase().replace(/[^a-z0-9]/g, '');
-        return k === "nama" || k === "name" || k === "pembangkit" || k === "unit";
-      });
-
-      // Fuzzy lookup for Nama-related keywords (excluding whatever was matched as code)
-      const fuzzyNamaKey = exactNamaKey || originalKeys.find(key => {
-        if (key === fuzzyKodeKey) return false;
-        const k = key.trim().toLowerCase();
-        return k.includes("nama") || k.includes("name") || k.includes("pembangkit") || k.includes("unit") || k.includes("keterangan") || k.includes("desc");
-      });
-
-      // Fallback if no specific key is found for name (pick first non-code key)
-      const fallbackNamaKey = fuzzyNamaKey || originalKeys.find(key => key !== fuzzyKodeKey);
-
-      if (fuzzyKodeKey) {
-        finalKode = String(item[fuzzyKodeKey] !== undefined && item[fuzzyKodeKey] !== null ? item[fuzzyKodeKey] : "").trim();
-      }
-      if (fallbackNamaKey) {
-        finalNama = String(item[fallbackNamaKey] !== undefined && item[fallbackNamaKey] !== null ? item[fallbackNamaKey] : "").trim();
-      }
-
-      return {
-        kode: finalKode,
-        nama: finalNama
-      };
-    });
-
-    // Filter out completely empty or invalid/incomplete rows
-    const nonEmptyRows = normalized.filter(item => {
-      return Object.values(item).some(val => String(val).trim() !== "");
-    });
-
-    const validRows = nonEmptyRows.filter(item => item.kode && item.nama);
-    const invalidRows = nonEmptyRows.filter(item => !item.kode || !item.nama);
-
-    if (validRows.length === 0) {
-      setUploadError("Validasi Gagal: Tidak ditemukan baris data yang valid dengan kolom 'kode' dan 'nama'. Pastikan berkas Anda memiliki header kolom 'kode' dan 'nama' (tidak sensitif huruf besar/kecil) di baris pertama atau baris awal tabel.");
+    if (validated.length === 0) {
+      setUploadError("Validasi Gagal: Tidak ditemukan baris data yang valid dengan kolom 'kode' dan 'nama'. Pastikan berkas Anda memiliki kolom kode dan nama unit (tidak sensitif huruf besar/kecil).");
       return;
     }
 
-    setParsedPreview(validRows);
-    
-    if (invalidRows.length > 0) {
-      setUploadSuccess(`Berhasil memuat ${validRows.length} baris data unit (${invalidRows.length} baris kosong/tidak lengkap diabaikan). Silakan tinjau dan klik 'Simpan Impor' di bawah.`);
-    } else {
-      setUploadSuccess(`Berhasil memuat ${validRows.length} baris data unit dari berkas. Silakan tinjau dan klik 'Simpan Impor' di bawah.`);
-    }
+    setParsedPreview(validated);
+    setUploadSuccess(`Berhasil memuat ${validated.length} baris data unit dari berkas. Silakan tinjau dan klik 'Simpan Impor' di bawah.`);
   };
 
   // Drag over handlers
@@ -285,60 +387,9 @@ export default function UnitDatabaseView() {
           const worksheet = workbook.Sheets[firstSheetName];
           
           // Get all rows as dynamic array of arrays
-          const rows = XLSX.utils.sheet_to_json(worksheet, { header: 1 }) as any[][];
+          const rows = XLSX.utils.sheet_to_json(worksheet, { header: 1, defval: "" }) as any[][];
           
-          // Scan first 15 rows to find the best table header row
-          let headerRowIndex = -1;
-          let foundHeaders: string[] = [];
-          
-          for (let r = 0; r < Math.min(rows.length, 15); r++) {
-            const row = rows[r];
-            if (!row || !Array.isArray(row)) continue;
-            
-            const potentialHeaders = row.map(cell => String(cell || "").trim().toLowerCase());
-            
-            // A valid table header row usually contains keywords for code/kode/kd and name/nama/unit
-            const hasKode = potentialHeaders.some(h => 
-              h === "kode" || h === "code" || h === "kd" || h === "id" || 
-              h.includes("kode") || h.includes("code") || h.includes("kd") || h.includes("id")
-            );
-            
-            const hasNama = potentialHeaders.some(h => 
-              h === "nama" || h === "name" || h === "unit" || h === "pembangkit" ||
-              h.includes("nama") || h.includes("name") || h.includes("unit") || h.includes("pembangkit")
-            );
-            
-            if (hasKode && hasNama) {
-              headerRowIndex = r;
-              foundHeaders = row.map(cell => String(cell || "").trim());
-              break;
-            }
-          }
-          
-          let parsed: any[] = [];
-          if (headerRowIndex !== -1 && foundHeaders.length > 0) {
-            // Build key-value objects starting after the header row
-            for (let r = headerRowIndex + 1; r < rows.length; r++) {
-              const row = rows[r];
-              if (!row || !Array.isArray(row)) continue;
-              
-              // Skip empty rows
-              if (row.some(cell => cell !== undefined && cell !== null && String(cell).trim() !== "")) {
-                const obj: any = {};
-                foundHeaders.forEach((header, colIndex) => {
-                  if (header) {
-                    obj[header] = row[colIndex] !== undefined && row[colIndex] !== null ? row[colIndex] : "";
-                  }
-                });
-                parsed.push(obj);
-              }
-            }
-          } else {
-            // Fallback: use standard sheet_to_json if no explicit header row detected
-            parsed = XLSX.utils.sheet_to_json(worksheet);
-          }
-          
-          processParsedData(parsed);
+          processParsedData(rows);
         } catch (err: any) {
           setUploadError(`Gagal membaca berkas Excel: ${err.message}`);
         }
