@@ -6,7 +6,7 @@
 import React, { useState } from "react";
 import { useSuppliers } from "../context/SupplierContext";
 import Logo from "./Logo";
-import { Evaluation, getPredikatAndColor, ASPECT_LABELS, ASPECT_WEIGHTS, ASPECT_DESCRIPTIONS, AspectKey } from "../types";
+import { Evaluation, getPredikatAndColor, ASPECT_LABELS, ASPECT_WEIGHTS, ASPECT_DESCRIPTIONS, AspectKey, AspectScores, calculateFinalScore } from "../types";
 import { 
   Search, 
   Trash2, 
@@ -53,9 +53,77 @@ export default function RekapitulasiView() {
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
   const [deleteConfirmNama, setDeleteConfirmNama] = useState("");
 
+  // Tampilan mode: 'average' (Rata-rata tahunan per nama supplier) atau 'detail' (Penilaian per kontrak/PO)
+  const [viewMode, setViewMode] = useState<"average" | "detail">("average");
+
   // Report printing state
   const [selectedEvaluationForPrint, setSelectedEvaluationForPrint] = useState<Evaluation | null>(null);
   const [showAllPrintPreview, setShowAllPrintPreview] = useState(false);
+
+  // Group and average evaluations by supplier name
+  const getGroupedAverages = (evals: Evaluation[]) => {
+    const groups: { [supplierNama: string]: Evaluation[] } = {};
+    evals.forEach(item => {
+      const nama = item.supplierNama.trim();
+      if (!groups[nama]) {
+        groups[nama] = [];
+      }
+      groups[nama].push(item);
+    });
+
+    return Object.keys(groups).map((nama, idx) => {
+      const items = groups[nama];
+      const first = items[0];
+      
+      const avgScores: AspectScores = {
+        integritas: 0,
+        kerjasama: 0,
+        mutu: 0,
+        waktu: 0,
+        harga: 0,
+        k3l: 0,
+        keamanan: 0,
+        energi: 0,
+      };
+
+      items.forEach(e => {
+        Object.keys(avgScores).forEach(key => {
+          const k = key as AspectKey;
+          avgScores[k] += e.scores[k] || 0;
+        });
+      });
+
+      Object.keys(avgScores).forEach(key => {
+        const k = key as AspectKey;
+        avgScores[k] = Math.round((avgScores[k] / items.length) * 10) / 10;
+      });
+
+      const avgNilaiAkhir = calculateFinalScore(avgScores);
+      const { predikat } = getPredikatAndColor(avgNilaiAkhir);
+
+      // Consolidate units and POs
+      const units = Array.from(new Set(items.map(e => e.unitKode).filter(Boolean))).join(", ");
+      const pos = Array.from(new Set(items.map(e => e.noPo).filter(Boolean))).join(", ");
+
+      return {
+        id: `avg-${first.supplierId || idx}-${selectedYear}`,
+        supplierId: first.supplierId || `grouped-${idx}`,
+        supplierNama: nama,
+        tahun: selectedYear,
+        periode: `Rata-rata (${items.length} Evaluasi)`,
+        scores: avgScores,
+        nilaiAkhir: avgNilaiAkhir,
+        predikat,
+        rekomendasi: items.map(e => e.rekomendasi).filter(Boolean).join(" | ") || `Kinerja dinilai ${predikat} dengan rata-rata tertimbang ${avgNilaiAkhir.toFixed(2)}.`,
+        evaluator: "Sistem (Konsolidasi Rata-rata)",
+        tanggalPenilaian: new Date().toLocaleDateString('id-ID', { year: 'numeric', month: 'long', day: 'numeric' }),
+        noPo: pos || "-",
+        deskripsiPo: `Konsolidasi nilai kinerja dari ${items.length} kontrak/PO di tahun ${selectedYear}`,
+        tanggalPo: "-",
+        unitKode: units || first.unitKode,
+      } as Evaluation;
+    });
+  };
 
   // Filtering Evaluations
   const filteredEvals = evaluations.filter((item) => {
@@ -75,8 +143,11 @@ export default function RekapitulasiView() {
     return matchSearch && matchYear && matchPeriod && matchPredikat;
   });
 
+  // Decide display evaluations depending on chosen viewMode (Average per Supplier vs Detail)
+  const displayEvals = viewMode === "average" ? getGroupedAverages(filteredEvals) : filteredEvals;
+
   // Sorting
-  const sortedEvals = [...filteredEvals].sort((a, b) => {
+  const sortedEvals = [...displayEvals].sort((a, b) => {
     let multiplier = sortOrder === "desc" ? 1 : -1;
     if (sortBy === "nama") {
       return multiplier * b.supplierNama.localeCompare(a.supplierNama);
@@ -168,7 +239,7 @@ export default function RekapitulasiView() {
       "Rekomendasi"
     ];
 
-    const rows = filteredEvals.map(item => [
+    const rows = displayEvals.map(item => [
       item.id,
       `"${item.supplierNama.replace(/"/g, '""')}"`,
       `"${(item.unitNama || '').replace(/"/g, '""')}"`,
@@ -425,16 +496,16 @@ export default function RekapitulasiView() {
   }
 
   if (showAllPrintPreview) {
-    const totalSuppliers = filteredEvals.length;
+    const totalSuppliers = displayEvals.length;
     const avgScore = totalSuppliers > 0 
-      ? Math.round((filteredEvals.reduce((sum, item) => sum + item.nilaiAkhir, 0) / totalSuppliers) * 100) / 100
+      ? Math.round((displayEvals.reduce((sum, item) => sum + item.nilaiAkhir, 0) / totalSuppliers) * 100) / 100
       : 0;
       
     const counts = {
-      sangatBaik: filteredEvals.filter(e => e.nilaiAkhir >= 4.25).length,
-      baik: filteredEvals.filter(e => e.nilaiAkhir >= 3.5 && e.nilaiAkhir < 4.25).length,
-      cukup: filteredEvals.filter(e => e.nilaiAkhir >= 3.0 && e.nilaiAkhir < 3.5).length,
-      kurang: filteredEvals.filter(e => e.nilaiAkhir < 3.0).length,
+      sangatBaik: displayEvals.filter(e => e.nilaiAkhir >= 4.25).length,
+      baik: displayEvals.filter(e => e.nilaiAkhir >= 3.5 && e.nilaiAkhir < 4.25).length,
+      cukup: displayEvals.filter(e => e.nilaiAkhir >= 3.0 && e.nilaiAkhir < 3.5).length,
+      kurang: displayEvals.filter(e => e.nilaiAkhir < 3.0).length,
     };
 
     return (
@@ -529,7 +600,7 @@ export default function RekapitulasiView() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-250 text-slate-800">
-                {filteredEvals.map((item, index) => {
+                {displayEvals.map((item, index) => {
                   const { predikat, color } = getPredikatAndColor(item.nilaiAkhir);
                   return (
                     <tr key={item.id} className="hover:bg-slate-50/50">
@@ -552,7 +623,7 @@ export default function RekapitulasiView() {
                     </tr>
                   );
                 })}
-                {filteredEvals.length === 0 && (
+                {displayEvals.length === 0 && (
                   <tr>
                     <td colSpan={9} className="py-10 text-center text-slate-400 italic">
                       Tidak ada data penilaian untuk periode ini.
@@ -624,6 +695,38 @@ export default function RekapitulasiView() {
             Ekspor CSV / Excel
           </button>
         </div>
+      </div>
+
+      {/* Mode Selector and Stats Overview */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 bg-white dark:bg-slate-900 p-3 rounded-lg border border-slate-200 dark:border-slate-800 shadow-xs">
+        <div className="flex bg-slate-100 dark:bg-slate-950 p-1 rounded-lg border border-slate-205 dark:border-slate-800/80 w-full sm:w-auto">
+          <button
+            onClick={() => { setViewMode("average"); setCurrentPage(1); }}
+            className={`flex-1 sm:flex-initial px-4 py-1.5 rounded-md text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
+              viewMode === "average"
+                ? "bg-[#0284c7] text-white shadow-xs"
+                : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
+            }`}
+          >
+            <Building2 className="w-3.5 h-3.5" />
+            Rata-Rata Tahunan Per Supplier
+          </button>
+          <button
+            onClick={() => { setViewMode("detail"); setCurrentPage(1); }}
+            className={`flex-1 sm:flex-initial px-4 py-1.5 rounded-md text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
+              viewMode === "detail"
+                ? "bg-[#0284c7] text-white shadow-xs"
+                : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
+            }`}
+          >
+            <FileText className="w-3.5 h-3.5" />
+            Detail Per Kontrak / PO
+          </button>
+        </div>
+        
+        <p className="text-[11px] text-slate-400 font-medium">
+          Tampilan saat ini: <span className="font-extrabold text-slate-600 dark:text-slate-200">{viewMode === "average" ? "Rata-rata Kinerja Supplier (Kolektif)" : "Hasil Evaluasi Per Kontrak / PO"}</span>
+        </p>
       </div>
 
       {/* Export Alert Notification */}
@@ -831,7 +934,7 @@ export default function RekapitulasiView() {
                         </button>
 
                         {/* Edit Rating */}
-                        {hasPermission("evaluations") && (
+                        {hasPermission("evaluations") && !item.id.startsWith("avg-") && (
                           <button 
                             onClick={() => handleEditTrigger(item)}
                             title="Edit Penilaian"
@@ -842,7 +945,7 @@ export default function RekapitulasiView() {
                         )}
 
                         {/* Delete Rating */}
-                        {hasPermission("evaluations") && (
+                        {hasPermission("evaluations") && !item.id.startsWith("avg-") && (
                           <button 
                             onClick={() => handleDeleteClick(item.id, item.supplierNama)}
                             title="Hapus Catatan"
