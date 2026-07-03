@@ -104,6 +104,17 @@ export const ASPECT_LABELS: Record<AspectKey, string> = {
   energi: "Manajemen Energi",
 };
 
+export const ASPECT_EVALUATORS: Record<AspectKey, string> = {
+  integritas: "Pengadaan",
+  kerjasama: "Pengadaan",
+  mutu: "Tim Pemeriksa Barang / Jasa",
+  waktu: "Gudang",
+  harga: "Pengadaan",
+  k3l: "K3L",
+  keamanan: "Bagian Keamanan",
+  energi: "Bagian Energi",
+};
+
 export const ASPECT_DESCRIPTIONS: Record<AspectKey, string> = {
   integritas: "Jujur dalam segala informasi perusahaan\nTaat dan patuh terhadap peraturan dan etika yang berlaku di PLN NP Services dan Unit-unit yang dikelola\nTidak melakukan/berperilaku KKN\nTidak melakukan tindakan kriminal\nMempengaruhi orang lain untuk menegakkan aspek integritas",
   kerjasama: "Keaktifan dalam melayani permintaan informasi harga, mengikuti anwijzing, dan memasukan dokumen penawaran\nKeaktifan dalam menghadiri kegiatan PLN NP Services dan melakukan update informasi perusahaan (profil, produk, dll)\nKeterlibatan langsung pemilik dalam proses transaksi\nKemudahan untuk dihubungi (fast respon)\nAkurasi invoice, ketepatan waktu penagihan, profesionalisme, kompetensi staf Penyedia, serta layanan purna jual",

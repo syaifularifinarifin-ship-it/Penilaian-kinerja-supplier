@@ -10,6 +10,7 @@ import {
   AspectScores, 
   ASPECT_WEIGHTS, 
   ASPECT_LABELS, 
+  ASPECT_EVALUATORS,
   ASPECT_DESCRIPTIONS, 
   AspectKey, 
   calculateFinalScore, 
@@ -433,7 +434,12 @@ export default function InputPenilaianView() {
                   return (
                     <div key={key} className="grid grid-cols-12 p-3 items-center bg-white">
                       <div className="col-span-5 sm:col-span-6 pr-2">
-                        <p className="font-bold text-slate-800 text-xs">{label}</p>
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="font-bold text-slate-800 text-xs">{label}</span>
+                          <span className="text-[8px] font-extrabold bg-amber-50 text-amber-700 px-1.5 py-0.5 rounded border border-amber-200">
+                            Evaluator: {ASPECT_EVALUATORS[key]}
+                          </span>
+                        </div>
                         <p className="text-[10px] text-slate-400 leading-relaxed mt-0.5">{ASPECT_DESCRIPTIONS[key].replace(/\n/g, "; ")}</p>
                       </div>
                       <div className="col-span-2 text-center font-bold text-slate-850 font-mono">
@@ -862,9 +868,12 @@ export default function InputPenilaianView() {
                   <div key={key} className="p-3 bg-slate-50 dark:bg-slate-800/40 rounded border border-slate-200 dark:border-slate-800/80 space-y-2">
                     <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-1.5">
                       <div>
-                        <div className="flex items-center gap-2">
-                          <span className="text-[9px] font-bold bg-sky-100 dark:bg-sky-950 text-[#0284c7] px-1.5 py-0.5 rounded border border-sky-200">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="text-[9px] font-bold bg-sky-100 dark:bg-sky-950 text-[#0284c7] px-1.5 py-0.5 rounded border border-sky-200 dark:border-sky-900/40">
                             Bobot {weight}%
+                          </span>
+                          <span className="text-[9px] font-bold bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400 px-1.5 py-0.5 rounded border border-amber-150 dark:border-amber-900/40">
+                            Evaluator: {ASPECT_EVALUATORS[key]}
                           </span>
                           <span className="text-xs font-bold text-slate-800 dark:text-white">{label}</span>
                         </div>

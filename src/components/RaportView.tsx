@@ -9,6 +9,7 @@ import Logo from "./Logo";
 import { 
   getPredikatAndColor, 
   ASPECT_LABELS, 
+  ASPECT_EVALUATORS,
   ASPECT_WEIGHTS, 
   ASPECT_DESCRIPTIONS, 
   AspectKey,
@@ -322,8 +323,13 @@ export default function RaportView() {
                     return (
                       <div key={key} className="grid grid-cols-12 p-2.5 items-center hover:bg-slate-50/40 dark:hover:bg-slate-800/10 transition-colors">
                         <div className="col-span-5 sm:col-span-6 pr-2">
-                          <p className="font-bold text-slate-800 dark:text-white text-xs">{label}</p>
-                          <p className="text-[10px] text-slate-400 line-clamp-1">{ASPECT_DESCRIPTIONS[key].replace(/\n/g, "; ")}</p>
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="font-bold text-slate-800 dark:text-white text-xs">{label}</span>
+                            <span className="text-[8px] font-extrabold bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-450 px-1.5 py-0.5 rounded border border-amber-200 dark:border-amber-900/40">
+                              Evaluator: {ASPECT_EVALUATORS[key]}
+                            </span>
+                          </div>
+                          <p className="text-[10px] text-slate-400 line-clamp-1 mt-0.5">{ASPECT_DESCRIPTIONS[key].replace(/\n/g, "; ")}</p>
                         </div>
                         <div className="col-span-2 text-center font-bold text-slate-800 dark:text-slate-100">{score}</div>
                         <div className="col-span-2 text-center text-slate-500 font-bold">{weight * 100}%</div>
