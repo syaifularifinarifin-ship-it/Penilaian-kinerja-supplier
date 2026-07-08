@@ -50,17 +50,22 @@ export default function RaportView() {
   // Find currently selected supplier profile
   const currentSupplier = suppliers.find(s => s.id === selectedSupplierIdForRaport) || suppliers[0];
 
-  // Calculate evaluation or average evaluation corresponding to selected supplier, year and period
+  // Get all evaluations matching the selected supplier, year, and period
+  const periodEvals = evaluations.filter(e => 
+    e.supplierId === (currentSupplier?.id || "") && 
+    e.tahun === selectedYear &&
+    (selectedPeriode === "Semua" ? true : e.periode === selectedPeriode)
+  );
+
+  const totalPoCount = periodEvals.length;
+
   let activeEval: Evaluation | null = null;
 
-  if (selectedPeriode === "Semua") {
-    const supplierEvals = evaluations.filter(e => 
-      e.supplierId === (currentSupplier?.id || "") && 
-      e.tahun === selectedYear
-    );
-
-    if (supplierEvals.length > 0) {
-      // Calculate mathematical average score for each aspect
+  if (periodEvals.length > 0) {
+    if (periodEvals.length === 1) {
+      activeEval = periodEvals[0];
+    } else {
+      // Calculate mathematical average score for each aspect across multiple evaluations/POs
       const avgScores: AspectScores = {
         integritas: 0,
         kerjasama: 0,
@@ -72,7 +77,7 @@ export default function RaportView() {
         energi: 0,
       };
 
-      supplierEvals.forEach(e => {
+      periodEvals.forEach(e => {
         Object.keys(avgScores).forEach(key => {
           const k = key as AspectKey;
           avgScores[k] += e.scores[k] || 0;
@@ -81,35 +86,36 @@ export default function RaportView() {
 
       Object.keys(avgScores).forEach(key => {
         const k = key as AspectKey;
-        avgScores[k] = Math.round((avgScores[k] / supplierEvals.length) * 100) / 100;
+        avgScores[k] = Math.round((avgScores[k] / periodEvals.length) * 100) / 100;
       });
 
       const avgNilaiAkhir = calculateFinalScore(avgScores);
       const { predikat } = getPredikatAndColor(avgNilaiAkhir);
 
+      const uniqueUnits = Array.from(new Set(periodEvals.map(e => e.unitNama).filter(Boolean)));
+      const uniqueUnitKodes = Array.from(new Set(periodEvals.map(e => e.unitKode).filter(Boolean)));
+
       activeEval = {
-        id: `avg-${currentSupplier?.id || "sup"}-${selectedYear}`,
+        id: `avg-${currentSupplier?.id || "sup"}-${selectedYear}-${selectedPeriode}`,
         supplierId: currentSupplier?.id || "",
         supplierNama: currentSupplier?.nama || "",
         tahun: selectedYear,
-        periode: `Rata-rata Semua Periode (${supplierEvals.length} Evaluasi)`,
+        periode: selectedPeriode === "Semua" 
+          ? `Rata-rata Semua Periode (${periodEvals.length} Evaluasi)`
+          : `${selectedPeriode} (Rata-rata ${periodEvals.length} PO/Evaluasi)`,
         scores: avgScores,
         nilaiAkhir: avgNilaiAkhir,
         predikat: predikat as any,
-        rekomendasi: supplierEvals.map(e => `[${e.periode}]: ${e.rekomendasi || "-"}`).join("\n"),
-        evaluator: "Sistem (Konsolidasi Multi-Periode)",
+        rekomendasi: periodEvals.map(e => `[${e.noPo || 'PO'}]: ${e.rekomendasi || "-"}`).join("\n"),
+        evaluator: "Sistem (Konsolidasi Multi-PO)",
         tanggalPenilaian: new Date().toLocaleDateString('id-ID', { year: 'numeric', month: 'long', day: 'numeric' }),
-        noPo: supplierEvals.map(e => e.noPo).filter(Boolean).join(", ") || "-",
-        deskripsiPo: `Konsolidasi nilai kinerja dari ${supplierEvals.length} kontrak/PO di tahun ${selectedYear}`,
-        tanggalPo: "-"
+        noPo: periodEvals.map(e => e.noPo).filter(Boolean).join(", ") || "-",
+        deskripsiPo: `Konsolidasi nilai kinerja dari ${periodEvals.length} kontrak/PO di periode ${selectedPeriode} ${selectedYear}`,
+        tanggalPo: "-",
+        unitNama: uniqueUnits.join(", ") || undefined,
+        unitKode: uniqueUnitKodes.join(", ") || undefined,
       };
     }
-  } else {
-    activeEval = evaluations.find(e => 
-      e.supplierId === (currentSupplier?.id || "") && 
-      e.tahun === selectedYear &&
-      e.periode === selectedPeriode
-    ) || null;
   }
 
   const handlePrint = () => {
@@ -276,12 +282,21 @@ export default function RaportView() {
             </div>
 
             {/* PO Information Section */}
-            {(activeEval.noPo || activeEval.deskripsiPo || activeEval.tanggalPo) && (
-              <div className="bg-sky-50/30 dark:bg-sky-950/20 p-3.5 rounded border border-sky-100 dark:border-sky-900/40 grid grid-cols-1 md:grid-cols-3 gap-3 text-xs">
+            {(activeEval.noPo || activeEval.deskripsiPo || activeEval.tanggalPo || totalPoCount > 0) && (
+              <div className="bg-sky-50/30 dark:bg-sky-950/20 p-3.5 rounded border border-sky-100 dark:border-sky-900/40 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 text-xs">
+                <div className="space-y-0.5">
+                  <p className="font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider text-[8px]">Total PO (Periode Ini)</p>
+                  <p className="font-bold text-slate-800 dark:text-slate-200 text-[11px] flex items-center gap-1.5">
+                    <span className="px-2 py-0.5 bg-sky-100 dark:bg-sky-950 text-sky-800 dark:text-sky-300 rounded-sm font-black font-mono border border-sky-200 dark:border-sky-900/40">
+                      {totalPoCount}
+                    </span>
+                    <span>PO Terdaftar</span>
+                  </p>
+                </div>
                 {activeEval.noPo && (
                   <div className="space-y-0.5">
                     <p className="font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider text-[8px]">Nomor Purchase Order (PO)</p>
-                    <p className="font-bold text-slate-800 dark:text-slate-200 text-[11px] font-mono">{activeEval.noPo}</p>
+                    <p className="font-bold text-slate-800 dark:text-slate-200 text-[11px] font-mono break-words">{activeEval.noPo}</p>
                   </div>
                 )}
                 {activeEval.tanggalPo && (
@@ -293,7 +308,7 @@ export default function RaportView() {
                 {activeEval.deskripsiPo && (
                   <div className="space-y-0.5">
                     <p className="font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider text-[8px]">Deskripsi Pekerjaan PO</p>
-                    <p className="font-medium text-slate-700 dark:text-slate-300 text-[11px] truncate" title={activeEval.deskripsiPo}>{activeEval.deskripsiPo}</p>
+                    <p className="font-medium text-slate-700 dark:text-slate-300 text-[11px] line-clamp-2" title={activeEval.deskripsiPo}>{activeEval.deskripsiPo}</p>
                   </div>
                 )}
               </div>
@@ -386,7 +401,7 @@ export default function RaportView() {
                 <span className="text-[9px] text-slate-400 font-bold uppercase">Skor Akhir</span>
               </div>
 
-              {/* Predikat */}
+              {/* Predikat & Total PO Info */}
               {(() => {
                 const { predikat, color, bgColor, borderColor } = getPredikatAndColor(activeEval.nilaiAkhir);
                 return (
@@ -397,6 +412,10 @@ export default function RaportView() {
                     <p className="text-[11px] text-slate-500">
                       Evaluasi resmi disahkan pada <span className="font-bold">{activeEval.tanggalPenilaian}</span> oleh {activeEval.evaluator.split(" (")[0]}
                     </p>
+                    <div className="pt-2.5 border-t border-slate-100 dark:border-slate-800/60 flex justify-between items-center text-[11px] text-slate-500">
+                      <span className="font-medium">Total PO Terintegrasi:</span>
+                      <span className="font-black text-slate-800 dark:text-white bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded font-mono border border-slate-200/40 dark:border-slate-700/40">{totalPoCount} PO</span>
+                    </div>
                   </div>
                 );
               })()}
