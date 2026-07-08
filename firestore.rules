@@ -1,0 +1,10 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Permissive rules for development/preview purposes
+    // To allow client-side sync without mandatory Firebase Auth login
+    match /{document=**} {
+      allow read, write: if true;
+    }
+  }
+}

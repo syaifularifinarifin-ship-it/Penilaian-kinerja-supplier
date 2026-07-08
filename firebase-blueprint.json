@@ -1,0 +1,116 @@
+{
+  "$schema": "https://raw.githubusercontent.com/google/ai-studio-skills/main/firebase-skill/blueprint.schema.json",
+  "entities": {
+    "Supplier": {
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "nama": { "type": "string" },
+        "kategoriBisnis": { "type": "string" },
+        "alamat": { "type": "string" },
+        "kontak": { "type": "string" },
+        "email": { "type": "string" },
+        "telepon": { "type": "string" }
+      },
+      "required": ["id", "nama"]
+    },
+    "Evaluation": {
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "supplierId": { "type": "string" },
+        "supplierNama": { "type": "string" },
+        "tahun": { "type": "integer" },
+        "periode": { "type": "string" },
+        "scores": {
+          "type": "object"
+        },
+        "nilaiAkhir": { "type": "number" },
+        "predikat": { "type": "string" },
+        "rekomendasi": { "type": "string" },
+        "evaluator": { "type": "string" },
+        "tanggalPenilaian": { "type": "string" },
+        "noPo": { "type": "string" },
+        "deskripsiPo": { "type": "string" },
+        "tanggalPo": { "type": "string" },
+        "unitNama": { "type": "string" },
+        "unitKode": { "type": "string" }
+      },
+      "required": ["id", "supplierId", "tahun", "periode", "scores", "nilaiAkhir", "predikat"]
+    },
+    "Unit": {
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "kode": { "type": "string" },
+        "nama": { "type": "string" },
+        "deskripsi": { "type": "string" }
+      },
+      "required": ["id", "kode", "nama"]
+    },
+    "SystemUser": {
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "nama": { "type": "string" },
+        "email": { "type": "string" },
+        "role": { "type": "string" },
+        "password": { "type": "string" },
+        "canManageSuppliers": { "type": "boolean" },
+        "canManageUnits": { "type": "boolean" },
+        "canManageEvaluations": { "type": "boolean" },
+        "canManageUsers": { "type": "boolean" },
+        "unitId": { "type": "string" },
+        "nid": { "type": "string" }
+      },
+      "required": ["id", "nama", "email", "role", "password"]
+    },
+    "ActivityLog": {
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "timestamp": { "type": "string" },
+        "user": { "type": "string" },
+        "action": { "type": "string" },
+        "details": { "type": "string" }
+      },
+      "required": ["id", "timestamp", "user", "action"]
+    },
+    "AppSettings": {
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "userProfile": { "type": "object" },
+        "appPassword": { "type": "string" },
+        "isLoggedIn": { "type": "boolean" }
+      },
+      "required": ["id"]
+    }
+  },
+  "firestore": {
+    "suppliers": {
+      "schema": "Supplier",
+      "description": "Database of registered suppliers/vendors."
+    },
+    "evaluations": {
+      "schema": "Evaluation",
+      "description": "Performance evaluations linked to suppliers."
+    },
+    "units": {
+      "schema": "Unit",
+      "description": "Organizational units or branches."
+    },
+    "systemUsers": {
+      "schema": "SystemUser",
+      "description": "System accounts and permissions configuration."
+    },
+    "activityLogs": {
+      "schema": "ActivityLog",
+      "description": "Audit trails for actions executed within the application."
+    },
+    "appSettings": {
+      "schema": "AppSettings",
+      "description": "Application settings and state configurations."
+    }
+  }
+}

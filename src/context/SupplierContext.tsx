@@ -4,6 +4,8 @@
  */
 
 import React, { createContext, useContext, useState, useEffect } from "react";
+import { db, handleFirestoreError, OperationType } from "../firebase";
+import { collection, onSnapshot, setDoc, doc, deleteDoc, getDocs } from "firebase/firestore";
 import { 
   Supplier, 
   Evaluation, 
@@ -506,23 +508,128 @@ export const SupplierProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     return saved === "true";
   });
 
-  // Keep localStorage in sync
+  // Firestore connection and seeding on first load
   useEffect(() => {
-    localStorage.setItem("sipeks_suppliers", JSON.stringify(suppliers));
-  }, [suppliers]);
+    const checkAndSeed = async () => {
+      try {
+        const settingsSnap = await getDocs(collection(db, "appSettings"));
+        let hasSeeded = false;
+        settingsSnap.forEach((doc) => {
+          if (doc.id === "global" && doc.data().seeded) {
+            hasSeeded = true;
+          }
+        });
 
+        if (!hasSeeded) {
+          console.log("Seeding initial data to Firestore...");
+          for (const s of initialSuppliers) {
+            await setDoc(doc(db, "suppliers", s.id), s);
+          }
+          for (const e of initialEvaluations) {
+            await setDoc(doc(db, "evaluations", e.id), e);
+          }
+          for (const u of initialUnits) {
+            await setDoc(doc(db, "units", u.id), u);
+          }
+          for (const u of initialSystemUsers) {
+            await setDoc(doc(db, "systemUsers", u.id), u);
+          }
+          for (const l of initialLogs) {
+            await setDoc(doc(db, "activityLogs", l.id), l);
+          }
+          await setDoc(doc(db, "appSettings", "global"), { seeded: true });
+          console.log("Firestore Seeding complete!");
+        }
+      } catch (err) {
+        handleFirestoreError(err, OperationType.WRITE, "appSettings/global");
+      }
+    };
+
+    checkAndSeed();
+  }, []);
+
+  // Listen for suppliers in real-time
   useEffect(() => {
-    localStorage.setItem("sipeks_evaluations", JSON.stringify(evaluations));
-  }, [evaluations]);
+    const unsub = onSnapshot(collection(db, "suppliers"), (snapshot) => {
+      if (!snapshot.empty) {
+        const list: Supplier[] = [];
+        snapshot.forEach((doc) => {
+          list.push(doc.data() as Supplier);
+        });
+        setSuppliers(list);
+      }
+    }, (error) => {
+      handleFirestoreError(error, OperationType.GET, "suppliers");
+    });
+    return () => unsub();
+  }, []);
 
+  // Listen for evaluations in real-time
   useEffect(() => {
-    localStorage.setItem("sipeks_logs", JSON.stringify(activityLogs));
-  }, [activityLogs]);
+    const unsub = onSnapshot(collection(db, "evaluations"), (snapshot) => {
+      if (!snapshot.empty) {
+        const list: Evaluation[] = [];
+        snapshot.forEach((doc) => {
+          list.push(doc.data() as Evaluation);
+        });
+        setEvaluations(list);
+      }
+    }, (error) => {
+      handleFirestoreError(error, OperationType.GET, "evaluations");
+    });
+    return () => unsub();
+  }, []);
 
+  // Listen for activityLogs in real-time
   useEffect(() => {
-    localStorage.setItem("sipeks_units", JSON.stringify(units));
-  }, [units]);
+    const unsub = onSnapshot(collection(db, "activityLogs"), (snapshot) => {
+      if (!snapshot.empty) {
+        const list: ActivityLog[] = [];
+        snapshot.forEach((doc) => {
+          list.push(doc.data() as ActivityLog);
+        });
+        list.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+        setActivityLogs(list);
+      }
+    }, (error) => {
+      handleFirestoreError(error, OperationType.GET, "activityLogs");
+    });
+    return () => unsub();
+  }, []);
 
+  // Listen for units in real-time
+  useEffect(() => {
+    const unsub = onSnapshot(collection(db, "units"), (snapshot) => {
+      if (!snapshot.empty) {
+        const list: Unit[] = [];
+        snapshot.forEach((doc) => {
+          list.push(doc.data() as Unit);
+        });
+        setUnits(list);
+      }
+    }, (error) => {
+      handleFirestoreError(error, OperationType.GET, "units");
+    });
+    return () => unsub();
+  }, []);
+
+  // Listen for systemUsers in real-time
+  useEffect(() => {
+    const unsub = onSnapshot(collection(db, "systemUsers"), (snapshot) => {
+      if (!snapshot.empty) {
+        const list: SystemUser[] = [];
+        snapshot.forEach((doc) => {
+          list.push(doc.data() as SystemUser);
+        });
+        setSystemUsers(list);
+      }
+    }, (error) => {
+      handleFirestoreError(error, OperationType.GET, "systemUsers");
+    });
+    return () => unsub();
+  }, []);
+
+  // Keep localStorage in sync for user session states
   useEffect(() => {
     localStorage.setItem("sipeks_userProfile", JSON.stringify(userProfile));
   }, [userProfile]);
@@ -530,10 +637,6 @@ export const SupplierProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   useEffect(() => {
     localStorage.setItem("sipeks_appPassword", JSON.stringify(appPassword));
   }, [appPassword]);
-
-  useEffect(() => {
-    localStorage.setItem("sipeks_systemUsers", JSON.stringify(systemUsers));
-  }, [systemUsers]);
 
   useEffect(() => {
     if (currentUser) {
@@ -567,18 +670,23 @@ export const SupplierProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   }, [darkMode]);
 
   const addLog = (action: string, details: string) => {
+    const newId = `log-${Date.now()}`;
     const newLog: ActivityLog = {
-      id: `log-${Date.now()}`,
+      id: newId,
       timestamp: new Date().toISOString(),
       user: `${userProfile.nama} (${userProfile.role})`,
       action,
       details,
     };
-    setActivityLogs(prev => [newLog, ...prev]);
+    setDoc(doc(db, "activityLogs", newId), newLog)
+      .catch(err => handleFirestoreError(err, OperationType.WRITE, `activityLogs/${newId}`));
   };
 
   const clearLogs = () => {
-    setActivityLogs([]);
+    activityLogs.forEach(log => {
+      deleteDoc(doc(db, "activityLogs", log.id))
+        .catch(err => handleFirestoreError(err, OperationType.DELETE, `activityLogs/${log.id}`));
+    });
     addLog("Bersihkan Log", "Semua riwayat log aktivitas dibersihkan.");
   };
 
@@ -589,27 +697,40 @@ export const SupplierProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       ...supplierData,
       id: newId,
     };
-    setSuppliers(prev => [...prev, newSupplier]);
+    setDoc(doc(db, "suppliers", newId), newSupplier)
+      .catch(err => handleFirestoreError(err, OperationType.WRITE, `suppliers/${newId}`));
     addLog("Tambah Supplier", `Menambahkan supplier baru: ${newSupplier.nama}`);
     return newSupplier;
   };
 
   const updateSupplier = (updatedSupplier: Supplier) => {
-    setSuppliers(prev => prev.map(s => s.id === updatedSupplier.id ? updatedSupplier : s));
+    setDoc(doc(db, "suppliers", updatedSupplier.id), updatedSupplier)
+      .catch(err => handleFirestoreError(err, OperationType.WRITE, `suppliers/${updatedSupplier.id}`));
+    
     // Also denormalize evaluation supplierNama if updated
-    setEvaluations(prev => prev.map(e => e.supplierId === updatedSupplier.id ? {
-      ...e,
-      supplierNama: updatedSupplier.nama
-    } : e));
+    evaluations.forEach(e => {
+      if (e.supplierId === updatedSupplier.id) {
+        setDoc(doc(db, "evaluations", e.id), {
+          ...e,
+          supplierNama: updatedSupplier.nama
+        }).catch(err => handleFirestoreError(err, OperationType.WRITE, `evaluations/${e.id}`));
+      }
+    });
     addLog("Update Supplier", `Memperbarui profil supplier: ${updatedSupplier.nama}`);
   };
 
   const deleteSupplier = (id: string) => {
     const supplier = suppliers.find(s => s.id === id);
     if (!supplier) return;
-    setSuppliers(prev => prev.filter(s => s.id !== id));
-    // Delete evaluations linked to supplier
-    setEvaluations(prev => prev.filter(e => e.supplierId !== id));
+    deleteDoc(doc(db, "suppliers", id))
+      .catch(err => handleFirestoreError(err, OperationType.DELETE, `suppliers/${id}`));
+    
+    evaluations.forEach(e => {
+      if (e.supplierId === id) {
+        deleteDoc(doc(db, "evaluations", e.id))
+          .catch(err => handleFirestoreError(err, OperationType.DELETE, `evaluations/${e.id}`));
+      }
+    });
     addLog("Hapus Supplier", `Menghapus supplier: ${supplier.nama} beserta data penilaiannya.`);
   };
 
@@ -627,7 +748,8 @@ export const SupplierProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       tanggalPenilaian: evalData.tanggalPenilaian || new Date().toISOString().split("T")[0]
     };
 
-    setEvaluations(prev => [...prev, newEvaluation]);
+    setDoc(doc(db, "evaluations", newId), newEvaluation)
+      .catch(err => handleFirestoreError(err, OperationType.WRITE, `evaluations/${newId}`));
     addLog("Tambah Penilaian", `Menginput penilaian untuk ${newEvaluation.supplierNama} periode ${newEvaluation.periode} ${newEvaluation.tahun}`);
     return newEvaluation;
   };
@@ -642,14 +764,16 @@ export const SupplierProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       predikat
     };
 
-    setEvaluations(prev => prev.map(e => e.id === finalEval.id ? finalEval : e));
+    setDoc(doc(db, "evaluations", finalEval.id), finalEval)
+      .catch(err => handleFirestoreError(err, OperationType.WRITE, `evaluations/${finalEval.id}`));
     addLog("Update Penilaian", `Memperbarui penilaian ${finalEval.supplierNama} periode ${finalEval.periode} ${finalEval.tahun}`);
   };
 
   const deleteEvaluation = (id: string) => {
     const evaluation = evaluations.find(e => e.id === id);
     if (!evaluation) return;
-    setEvaluations(prev => prev.filter(e => e.id !== id));
+    deleteDoc(doc(db, "evaluations", id))
+      .catch(err => handleFirestoreError(err, OperationType.DELETE, `evaluations/${id}`));
     addLog("Hapus Penilaian", `Menghapus penilaian ${evaluation.supplierNama} periode ${evaluation.periode} ${evaluation.tahun}`);
   };
 
@@ -660,36 +784,42 @@ export const SupplierProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       ...unitData,
       id: newId
     };
-    setUnits(prev => [...prev, newUnit]);
+    setDoc(doc(db, "units", newId), newUnit)
+      .catch(err => handleFirestoreError(err, OperationType.WRITE, `units/${newId}`));
     addLog("Tambah Unit", `Menambahkan unit baru: [${newUnit.kode}] ${newUnit.nama}`);
     return newUnit;
   };
 
   const updateUnit = (updatedUnit: Unit) => {
-    setUnits(prev => prev.map(u => u.id === updatedUnit.id ? updatedUnit : u));
+    setDoc(doc(db, "units", updatedUnit.id), updatedUnit)
+      .catch(err => handleFirestoreError(err, OperationType.WRITE, `units/${updatedUnit.id}`));
     addLog("Update Unit", `Memperbarui data unit: [${updatedUnit.kode}] ${updatedUnit.nama}`);
   };
 
   const deleteUnit = (id: string) => {
     const unit = units.find(u => u.id === id);
     if (!unit) return;
-    setUnits(prev => prev.filter(u => u.id !== id));
+    deleteDoc(doc(db, "units", id))
+      .catch(err => handleFirestoreError(err, OperationType.DELETE, `units/${id}`));
     addLog("Hapus Unit", `Menghapus unit: [${unit.kode}] ${unit.nama}`);
   };
 
   // CRUD System Users (Hak Akses)
   const addSystemUser = (userData: Omit<SystemUser, "id">) => {
+    const newId = `user-${Date.now()}`;
     const newUser: SystemUser = {
-      id: `user-${Date.now()}`,
+      id: newId,
       ...userData
     };
-    setSystemUsers(prev => [...prev, newUser]);
+    setDoc(doc(db, "systemUsers", newId), newUser)
+      .catch(err => handleFirestoreError(err, OperationType.WRITE, `systemUsers/${newId}`));
     addLog("Tambah Pengguna", `Menambahkan pengguna sistem baru: ${newUser.nama} (${newUser.role})`);
     return newUser;
   };
 
   const updateSystemUser = (updatedUser: SystemUser) => {
-    setSystemUsers(prev => prev.map(u => u.id === updatedUser.id ? updatedUser : u));
+    setDoc(doc(db, "systemUsers", updatedUser.id), updatedUser)
+      .catch(err => handleFirestoreError(err, OperationType.WRITE, `systemUsers/${updatedUser.id}`));
     addLog("Update Pengguna", `Memperbarui data pengguna: ${updatedUser.nama} (${updatedUser.role})`);
     
     if (currentUser && currentUser.id === updatedUser.id) {
@@ -706,7 +836,8 @@ export const SupplierProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       return;
     }
 
-    setSystemUsers(prev => prev.filter(u => u.id !== id));
+    deleteDoc(doc(db, "systemUsers", id))
+      .catch(err => handleFirestoreError(err, OperationType.DELETE, `systemUsers/${id}`));
     addLog("Hapus Pengguna", `Menghapus pengguna: ${userToDelete.nama} (${userToDelete.role})`);
   };
 
