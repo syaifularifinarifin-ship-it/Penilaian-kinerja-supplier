@@ -48,7 +48,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
     },
     {
       id: "input",
-      label: "Input Penilaian",
+      label: "Input Penilaian Kinerja Supplier",
       icon: ClipboardCheck,
       desc: "Kuesioner & Evaluasi Kinerja",
     },
