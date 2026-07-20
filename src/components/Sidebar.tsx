@@ -16,7 +16,8 @@ import {
   UserCheck,
   Database,
   Cpu,
-  Settings
+  Settings,
+  LogOut
 } from "lucide-react";
 
 interface SidebarProps {
@@ -25,7 +26,14 @@ interface SidebarProps {
 }
 
 export default function Sidebar({ isOpen, onClose }: SidebarProps) {
-  const { activeTab, setActiveTab, userProfile, units } = useSuppliers();
+  const { activeTab, setActiveTab, userProfile, units, setIsLoggedIn, addLog } = useSuppliers();
+
+  const handleLockSystem = () => {
+    if (confirm("Apakah Anda yakin ingin keluar dan mengunci sistem? Anda memerlukan kata sandi untuk masuk kembali.")) {
+      setIsLoggedIn(false);
+      addLog("Logout", "Sesi pengguna dikunci oleh sistem.");
+    }
+  };
 
   const menuItems = [
     {
@@ -141,7 +149,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
         </nav>
 
         {/* Footer info: User logged-in session */}
-        <div className="p-4 border-t border-[#0e5a84] bg-[#093a57]">
+        <div className="p-4 border-t border-[#0e5a84] bg-[#093a57] space-y-3">
           <button 
             onClick={() => handleTabClick("settings")}
             className="w-full text-left flex items-center gap-3 p-2 rounded-lg bg-[#0c4a6e]/50 border border-[#0e5a84]/40 hover:bg-[#0c4a6e]/80 hover:border-sky-500/50 transition-all cursor-pointer group"
@@ -159,6 +167,14 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
                 🏢 {units.find(u => u.id === userProfile.unitId)?.nama || "Semua Unit"}
               </p>
             </div>
+          </button>
+
+          <button
+            onClick={handleLockSystem}
+            className="w-full flex items-center justify-center gap-2 px-3 py-2 text-xs font-semibold text-rose-300 bg-[#7f1d1d]/35 hover:bg-[#7f1d1d]/60 hover:text-white border border-rose-500/20 hover:border-rose-500/40 rounded-lg transition-all cursor-pointer"
+          >
+            <LogOut className="w-3.5 h-3.5" />
+            Keluar Aplikasi
           </button>
         </div>
 
