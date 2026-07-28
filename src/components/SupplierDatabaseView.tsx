@@ -475,6 +475,70 @@ PT Baja Perkasa Abadi,Penyedia Konstruksi & Logam,"Kawasan Industri Pulo Gadung,
   const evaluationCsvTemplate = `supplierNama,tahun,periode,integritas,kerjasama,mutu,waktu,harga,k3l,keamanan,energi,rekomendasi,evaluator,tanggalPenilaian,noPo,deskripsiPo,tanggalPo
 PT Batubara Mulia Abadi,2026,Semester 1,4.5,4.2,4.0,3.8,4.5,4.8,4.0,3.5,Pertahankan kinerja prima,Syaiful Arifin,2026-06-28,PO/2026/00451,Pengadaan Batubara Kalori Rendah,2026-01-10`;
 
+  // Download Excel (.xlsx) Template Loader
+  const downloadSupplierTemplateXLSX = () => {
+    const data = [
+      {
+        nama: "PT Baja Perkasa Abadi",
+        kategoriBisnis: "Penyedia Konstruksi & Logam",
+        alamat: "Kawasan Industri Pulo Gadung, Jakarta",
+        kontak: "Bapak Hermawan",
+        email: "hermawan@bajaperkasa.com",
+        telepon: "+62 21 460 7788"
+      },
+      {
+        nama: "CV Nusantara Teknik Utama",
+        kategoriBisnis: "Jasa Perbaikan & Pemeliharaan",
+        alamat: "Jl. Pemuda No. 45, Surabaya",
+        kontak: "Ibu Ratna Purwanti",
+        email: "ratna@nusantarateknik.co.id",
+        telepon: "+62 31 550 1234"
+      },
+      {
+        nama: "PT Energi Mandiri Cemerlang",
+        kategoriBisnis: "Pengadaan Bahan Bakar & Energi",
+        alamat: "Kawasan Industri Jababeka, Cikarang",
+        kontak: "Bapak Budi Santoso",
+        email: "budi@energimandiri.com",
+        telepon: "+62 21 890 9988"
+      }
+    ];
+
+    const worksheet = XLSX.utils.json_to_sheet(data);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Template Supplier");
+    XLSX.writeFile(workbook, "Template_Loader_Database_Supplier.xlsx");
+  };
+
+  const downloadEvaluationTemplateXLSX = () => {
+    const data = [
+      {
+        supplierNama: "PT Batubara Mulia Abadi",
+        tahun: 2026,
+        periode: "Semester 1",
+        integritas: 4.5,
+        kerjasama: 4.2,
+        mutu: 4.0,
+        waktu: 3.8,
+        harga: 4.5,
+        k3l: 4.8,
+        keamanan: 4.0,
+        energi: 3.5,
+        rekomendasi: "Pertahankan kinerja yang prima ini.",
+        evaluator: "Syaiful Arifin (Manajer Logistik)",
+        tanggalPenilaian: "2026-06-28",
+        noPo: "PO/2026/00451",
+        deskripsiPo: "Pengadaan Batubara Kalori Rendah 15.000 Ton",
+        tanggalPo: "2026-01-10"
+      }
+    ];
+
+    const worksheet = XLSX.utils.json_to_sheet(data);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Template Evaluasi");
+    XLSX.writeFile(workbook, "Template_Loader_Evaluasi_Supplier.xlsx");
+  };
+
   return (
     <div className="space-y-6">
       {/* Title Header with Action Buttons */}
@@ -490,7 +554,17 @@ PT Batubara Mulia Abadi,2026,Semester 1,4.5,4.2,4.0,3.8,4.5,4.8,4.0,3.5,Pertahan
         </div>
 
         {hasPermission("suppliers") && (
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
+            {/* Download Template Loader Button */}
+            <button
+              onClick={downloadSupplierTemplateXLSX}
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/40 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-900/50 rounded cursor-pointer transition-colors"
+              title="Unduh file template Excel (.xlsx) untuk loader/impor supplier"
+            >
+              <Download className="w-3.5 h-3.5" />
+              Unduh Template Loader (.xlsx)
+            </button>
+
             {/* Open Upload Panel Button */}
             <button
               onClick={() => setIsUploadOpen(true)}
@@ -872,15 +946,25 @@ PT Batubara Mulia Abadi,2026,Semester 1,4.5,4.2,4.0,3.8,4.5,4.8,4.0,3.5,Pertahan
                   </div>
 
                   {/* Template download and instructions */}
-                  <div className="bg-slate-50 dark:bg-slate-950 p-3.5 rounded border border-slate-100 dark:border-slate-800/60 space-y-2">
-                    <p className="text-[10px] font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1">
-                      <Info className="w-3.5 h-3.5 text-sky-500" /> Petunjuk Format Template
-                    </p>
-                    <p className="text-[9px] text-slate-400">Pastikan format kolom tabel persis seperti contoh di bawah ini sebelum diimpor:</p>
+                  <div className="bg-slate-50 dark:bg-slate-950 p-3.5 rounded border border-slate-100 dark:border-slate-800/60 space-y-2.5">
+                    <div className="flex items-center justify-between">
+                      <p className="text-[10px] font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1">
+                        <Info className="w-3.5 h-3.5 text-sky-500" /> Petunjuk & File Template
+                      </p>
+                      <button
+                        onClick={uploadTab === "supplier" ? downloadSupplierTemplateXLSX : downloadEvaluationTemplateXLSX}
+                        className="flex items-center gap-1 px-2.5 py-1 text-[10px] font-bold text-white bg-emerald-600 hover:bg-emerald-700 rounded shadow-xs cursor-pointer transition-colors"
+                      >
+                        <Download className="w-3 h-3" />
+                        Unduh Template .xlsx
+                      </button>
+                    </div>
+                    
+                    <p className="text-[9px] text-slate-400">Gunakan file template Excel di atas atau pastikan struktur kolom sesuai:</p>
                     
                     <div className="flex justify-between items-center bg-white dark:bg-slate-900 p-1.5 rounded text-[9px] font-mono border border-slate-200 dark:border-slate-800">
                       <span className="text-slate-500 text-[8px] truncate mr-2">
-                        {uploadTab === "supplier" ? "nama,kategoriBisnis,alamat,kontak,email,telepon" : "supplierNama,tahun,periode,integritas,kerjasama,mutu,waktu..."}
+                        {uploadTab === "supplier" ? "nama,kategoriBisnis,alamat,kontak,email,telepon" : "supplierNama,tahun,periode,integritas,kerjasama..."}
                       </span>
                       <button
                         onClick={() => {
