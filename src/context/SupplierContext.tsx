@@ -84,6 +84,7 @@ const initialSuppliers: Supplier[] = [
   {
     id: "sup-1",
     nama: "PT Batubara Mulia Abadi",
+    noVendorEllipse: "V-10028491",
     kategoriBisnis: "Penyedia Bahan Bakar Batubara",
     alamat: "Jl. Jenderal Sudirman No. 45, Jakarta Selatan",
     kontak: "Ir. Bambang Wijaya, M.T.",
@@ -93,6 +94,7 @@ const initialSuppliers: Supplier[] = [
   {
     id: "sup-2",
     nama: "PT Turbin Sinergi Nusantara",
+    noVendorEllipse: "V-10039204",
     kategoriBisnis: "Suku Cadang & Pemeliharaan Turbin",
     alamat: "Kawasan Industri MM2100 Blok C-3, Cikarang",
     kontak: "Ir. Hendra Setiawan",
@@ -102,6 +104,7 @@ const initialSuppliers: Supplier[] = [
   {
     id: "sup-3",
     nama: "PT Pompa Hidro Mekanika",
+    noVendorEllipse: "V-10041829",
     kategoriBisnis: "Jasa Pemeliharaan Pompa & Katup",
     alamat: "Jl. Rungkut Industri Raya No. 12, Surabaya",
     kontak: "Ahmad Fauzi, S.T.",
@@ -111,6 +114,7 @@ const initialSuppliers: Supplier[] = [
   {
     id: "sup-4",
     nama: "CV Kaltim Lestari Safety",
+    noVendorEllipse: "V-10057210",
     kategoriBisnis: "Alat Pelindung Diri & Peralatan K3L",
     alamat: "Jl. Mulawarman No. 88, Samarinda",
     kontak: "Siti Rahmawati",
@@ -120,6 +124,7 @@ const initialSuppliers: Supplier[] = [
   {
     id: "sup-5",
     nama: "PT Solusi Energi Hijau",
+    noVendorEllipse: "V-10068341",
     kategoriBisnis: "Konsultan Manajemen Energi",
     alamat: "Graha Energi Lantai 15, SCBD, Jakarta",
     kontak: "Dr. Eng. Dian Pratama",
@@ -129,6 +134,7 @@ const initialSuppliers: Supplier[] = [
   {
     id: "sup-6",
     nama: "PT Siber Tekno Keamanan",
+    noVendorEllipse: "V-10074922",
     kategoriBisnis: "Sistem IT, Security & Komunikasi",
     alamat: "Ruko Tekno No. 5, BSD City, Tangerang",
     kontak: "Rudi Hermawan, S.Kom.",
@@ -138,6 +144,7 @@ const initialSuppliers: Supplier[] = [
   {
     id: "sup-7",
     nama: "CV Surya Abadi Teknik",
+    noVendorEllipse: "V-10081530",
     kategoriBisnis: "Penyedia Kabel & Instrumen Kelistrikan",
     alamat: "Jl. Kramat Raya No. 102, Jakarta Pusat",
     kontak: "Agus Salim",

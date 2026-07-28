@@ -82,6 +82,7 @@ export default function InputPenilaianView() {
   // Quick Inline Supplier registration
   const [isInlineSupOpen, setIsInlineSupOpen] = useState(false);
   const [newSupNama, setNewSupNama] = useState("");
+  const [newSupNoVendor, setNewSupNoVendor] = useState("");
   const [newSupKategori, setNewSupKategori] = useState("Penyedia Bahan Bakar Batubara");
   const [newSupKontak, setNewSupKontak] = useState("");
 
@@ -158,6 +159,7 @@ export default function InputPenilaianView() {
     if (!newSupNama.trim() || !newSupKontak.trim()) return;
     const created = addSupplier({
       nama: newSupNama,
+      noVendorEllipse: newSupNoVendor.trim(),
       kategoriBisnis: newSupKategori,
       alamat: "Alat Kelengkapan Lapangan Pembangkit",
       kontak: newSupKontak,
@@ -166,6 +168,7 @@ export default function InputPenilaianView() {
     });
     setSupplierId(created.id);
     setNewSupNama("");
+    setNewSupNoVendor("");
     setNewSupKontak("");
     setIsInlineSupOpen(false);
   };
@@ -646,13 +649,22 @@ export default function InputPenilaianView() {
                 {isInlineSupOpen ? (
                   <div className="bg-slate-50 dark:bg-slate-950 p-3 rounded border border-slate-200 dark:border-slate-800 space-y-2 mt-1">
                     <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Registrasi Supplier Cepat</p>
-                    <input 
-                      type="text"
-                      placeholder="Nama PT / CV Baru"
-                      value={newSupNama}
-                      onChange={(e) => setNewSupNama(e.target.value)}
-                      className="w-full px-2.5 py-1 text-xs bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded text-slate-900 dark:text-white"
-                    />
+                    <div className="grid grid-cols-2 gap-2">
+                      <input 
+                        type="text"
+                        placeholder="Nama PT / CV Baru"
+                        value={newSupNama}
+                        onChange={(e) => setNewSupNama(e.target.value)}
+                        className="w-full px-2.5 py-1 text-xs bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded text-slate-900 dark:text-white"
+                      />
+                      <input 
+                        type="text"
+                        placeholder="No. Vendor Ellipse"
+                        value={newSupNoVendor}
+                        onChange={(e) => setNewSupNoVendor(e.target.value)}
+                        className="w-full px-2.5 py-1 text-xs bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded text-slate-900 dark:text-white font-mono"
+                      />
+                    </div>
                     <div className="grid grid-cols-2 gap-2">
                       <input 
                         type="text"
@@ -697,7 +709,9 @@ export default function InputPenilaianView() {
                     className="w-full px-2.5 py-1.5 text-xs bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded focus:ring-1 focus:ring-sky-500 focus:outline-hidden text-slate-900 dark:text-white"
                   >
                     {suppliers.map(s => (
-                      <option key={s.id} value={s.id}>{s.nama} ({s.kategoriBisnis})</option>
+                      <option key={s.id} value={s.id}>
+                        {s.nama} {s.noVendorEllipse ? `[Ellipse: ${s.noVendorEllipse}]` : ""} ({s.kategoriBisnis})
+                      </option>
                     ))}
                   </select>
                 )}

@@ -65,6 +65,7 @@ export default function SupplierDatabaseView() {
 
   // Supplier Form State
   const [formNama, setFormNama] = useState("");
+  const [formNoVendor, setFormNoVendor] = useState("");
   const [formKategori, setFormKategori] = useState("");
   const [formAlamat, setFormAlamat] = useState("");
   const [formKontak, setFormKontak] = useState("");
@@ -93,6 +94,7 @@ export default function SupplierDatabaseView() {
   const filteredSuppliers = supplierStats.filter(sup => {
     const matchesSearch = 
       sup.nama.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (sup.noVendorEllipse && sup.noVendorEllipse.toLowerCase().includes(searchTerm.toLowerCase())) ||
       sup.kategoriBisnis.toLowerCase().includes(searchTerm.toLowerCase()) ||
       sup.kontak.toLowerCase().includes(searchTerm.toLowerCase());
     
@@ -105,6 +107,7 @@ export default function SupplierDatabaseView() {
   const handleAddOpen = () => {
     setEditingSupplier(null);
     setFormNama("");
+    setFormNoVendor("");
     setFormKategori("");
     setFormAlamat("");
     setFormKontak("");
@@ -117,6 +120,7 @@ export default function SupplierDatabaseView() {
   const handleEditOpen = (sup: Supplier) => {
     setEditingSupplier(sup);
     setFormNama(sup.nama);
+    setFormNoVendor(sup.noVendorEllipse || "");
     setFormKategori(sup.kategoriBisnis);
     setFormAlamat(sup.alamat);
     setFormKontak(sup.kontak);
@@ -135,6 +139,7 @@ export default function SupplierDatabaseView() {
 
     const supplierData = {
       nama: formNama.trim(),
+      noVendorEllipse: formNoVendor.trim(),
       kategoriBisnis: formKategori.trim(),
       alamat: formAlamat.trim(),
       kontak: formKontak.trim(),
@@ -350,6 +355,7 @@ export default function SupplierDatabaseView() {
         const newSuppliers: Supplier[] = parsedPreview.map((item, index) => ({
           id: item.id || `sup-${Date.now()}-${index}`,
           nama: String(item.nama),
+          noVendorEllipse: String(item.noVendorEllipse || item.noVendor || item.vendorEllipse || ""),
           kategoriBisnis: String(item.kategoriBisnis || "Penyedia"),
           alamat: String(item.alamat || ""),
           kontak: String(item.kontak || ""),
@@ -376,6 +382,7 @@ export default function SupplierDatabaseView() {
           if (!supplierObj) {
             addSupplier({
               nama: String(item.supplierNama),
+              noVendorEllipse: item.noVendorEllipse || "",
               kategoriBisnis: "Hasil Impor",
               alamat: "",
               kontak: "PIC Impor",
@@ -439,6 +446,7 @@ export default function SupplierDatabaseView() {
   const supplierJsonTemplate = `[
   {
     "nama": "PT Baja Perkasa Abadi",
+    "noVendorEllipse": "V-10029301",
     "kategoriBisnis": "Penyedia Konstruksi & Logam",
     "alamat": "Kawasan Industri Pulo Gadung, Jakarta",
     "kontak": "Bapak Hermawan",
@@ -447,8 +455,8 @@ export default function SupplierDatabaseView() {
   }
 ]`;
 
-  const supplierCsvTemplate = `nama,kategoriBisnis,alamat,kontak,email,telepon
-PT Baja Perkasa Abadi,Penyedia Konstruksi & Logam,"Kawasan Industri Pulo Gadung, Jakarta",Bapak Hermawan,hermawan@bajaperkasa.com,+62 21 460 7788`;
+  const supplierCsvTemplate = `nama,noVendorEllipse,kategoriBisnis,alamat,kontak,email,telepon
+PT Baja Perkasa Abadi,V-10029301,Penyedia Konstruksi & Logam,"Kawasan Industri Pulo Gadung, Jakarta",Bapak Hermawan,hermawan@bajaperkasa.com,+62 21 460 7788`;
 
   const evaluationJsonTemplate = `[
   {
@@ -480,6 +488,7 @@ PT Batubara Mulia Abadi,2026,Semester 1,4.5,4.2,4.0,3.8,4.5,4.8,4.0,3.5,Pertahan
     const data = [
       {
         nama: "PT Baja Perkasa Abadi",
+        noVendorEllipse: "V-10029301",
         kategoriBisnis: "Penyedia Konstruksi & Logam",
         alamat: "Kawasan Industri Pulo Gadung, Jakarta",
         kontak: "Bapak Hermawan",
@@ -488,6 +497,7 @@ PT Batubara Mulia Abadi,2026,Semester 1,4.5,4.2,4.0,3.8,4.5,4.8,4.0,3.5,Pertahan
       },
       {
         nama: "CV Nusantara Teknik Utama",
+        noVendorEllipse: "V-10038412",
         kategoriBisnis: "Jasa Perbaikan & Pemeliharaan",
         alamat: "Jl. Pemuda No. 45, Surabaya",
         kontak: "Ibu Ratna Purwanti",
@@ -496,6 +506,7 @@ PT Batubara Mulia Abadi,2026,Semester 1,4.5,4.2,4.0,3.8,4.5,4.8,4.0,3.5,Pertahan
       },
       {
         nama: "PT Energi Mandiri Cemerlang",
+        noVendorEllipse: "V-10049283",
         kategoriBisnis: "Pengadaan Bahan Bakar & Energi",
         alamat: "Kawasan Industri Jababeka, Cikarang",
         kontak: "Bapak Budi Santoso",
@@ -610,7 +621,7 @@ PT Batubara Mulia Abadi,2026,Semester 1,4.5,4.2,4.0,3.8,4.5,4.8,4.0,3.5,Pertahan
           <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
           <input
             type="text"
-            placeholder="Cari berdasarkan nama, kategori, PIC..."
+            placeholder="Cari berdasarkan nama, No. Vendor Ellipse, kategori, PIC..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="w-full pl-9 pr-4 py-1.5 text-xs bg-slate-50 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-800 rounded focus:ring-1 focus:ring-sky-500 focus:outline-hidden text-slate-800 dark:text-white"
@@ -637,7 +648,7 @@ PT Batubara Mulia Abadi,2026,Semester 1,4.5,4.2,4.0,3.8,4.5,4.8,4.0,3.5,Pertahan
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="bg-slate-50 dark:bg-slate-950/60 border-b border-slate-200 dark:border-slate-800 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-                <th className="py-3 px-4">Nama Supplier & Informasi Hubungan</th>
+                <th className="py-3 px-4">Nama Supplier & No. Vendor Ellipse</th>
                 <th className="py-3 px-4">Kontak Person / PIC</th>
                 <th className="py-3 px-4">Alamat Kantor</th>
                 <th className="py-3 px-4 text-center">Jumlah Evaluasi</th>
@@ -660,9 +671,20 @@ PT Batubara Mulia Abadi,2026,Semester 1,4.5,4.2,4.0,3.8,4.5,4.8,4.0,3.5,Pertahan
                     <tr key={sup.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-850/40 transition-colors">
                       <td className="py-3.5 px-4 space-y-1 max-w-xs">
                         <p className="font-extrabold text-slate-900 dark:text-white leading-tight">{sup.nama}</p>
-                        <span className="inline-block text-[9px] px-1.5 py-0.5 bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 rounded-sm font-semibold">
-                          {sup.kategoriBisnis}
-                        </span>
+                        <div className="flex flex-wrap items-center gap-1.5">
+                          {sup.noVendorEllipse ? (
+                            <span className="inline-block text-[9px] px-1.5 py-0.5 bg-sky-50 dark:bg-sky-950/50 text-sky-700 dark:text-sky-400 border border-sky-200 dark:border-sky-900/50 rounded-sm font-mono font-bold">
+                              Ellipse: {sup.noVendorEllipse}
+                            </span>
+                          ) : (
+                            <span className="inline-block text-[9px] px-1.5 py-0.5 bg-slate-50 dark:bg-slate-800 text-slate-400 rounded-sm font-mono italic">
+                              Tanpa No. Vendor
+                            </span>
+                          )}
+                          <span className="inline-block text-[9px] px-1.5 py-0.5 bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 rounded-sm font-semibold">
+                            {sup.kategoriBisnis}
+                          </span>
+                        </div>
                       </td>
                       <td className="py-3.5 px-4 space-y-1">
                         <p className="font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-1">
@@ -767,16 +789,27 @@ PT Batubara Mulia Abadi,2026,Semester 1,4.5,4.2,4.0,3.8,4.5,4.8,4.0,3.5,Pertahan
                 </div>
 
                 <div className="space-y-1">
-                  <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Kategori Bisnis *</label>
+                  <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">No. Vendor Ellipse (ERP)</label>
                   <input
                     type="text"
-                    required
-                    value={formKategori}
-                    onChange={(e) => setFormKategori(e.target.value)}
-                    placeholder="Contoh: Pengadaan Material Sipil"
-                    className="w-full px-3 py-1.5 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded focus:ring-1 focus:ring-[#0284c7] focus:outline-hidden text-slate-900 dark:text-white"
+                    value={formNoVendor}
+                    onChange={(e) => setFormNoVendor(e.target.value)}
+                    placeholder="Contoh: V-10028491"
+                    className="w-full px-3 py-1.5 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded focus:ring-1 focus:ring-[#0284c7] focus:outline-hidden text-slate-900 dark:text-white font-mono"
                   />
                 </div>
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Kategori Bisnis *</label>
+                <input
+                  type="text"
+                  required
+                  value={formKategori}
+                  onChange={(e) => setFormKategori(e.target.value)}
+                  placeholder="Contoh: Pengadaan Material Sipil"
+                  className="w-full px-3 py-1.5 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded focus:ring-1 focus:ring-[#0284c7] focus:outline-hidden text-slate-900 dark:text-white"
+                />
               </div>
 
               <div className="space-y-1">

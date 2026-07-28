@@ -19,6 +19,7 @@ export type AspectKey = keyof AspectScores;
 export interface Supplier {
   id: string;
   nama: string;
+  noVendorEllipse?: string; // No. Vendor Ellipse (PLN ERP System)
   kategoriBisnis: string; // e.g., "Bahan Bakar Batubara", "Suku Cadang Turbin", "Jasa Pemeliharaan"
   alamat: string;
   kontak: string;

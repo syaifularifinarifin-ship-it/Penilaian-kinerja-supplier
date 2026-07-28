@@ -259,6 +259,11 @@ export default function RaportView() {
                     <Building2 className="w-4 h-4 text-slate-400" />
                     {currentSupplier?.nama}
                   </p>
+                  {currentSupplier?.noVendorEllipse && (
+                    <p className="text-[11px] font-mono font-bold text-sky-700 dark:text-sky-400">
+                      No. Vendor Ellipse: {currentSupplier.noVendorEllipse}
+                    </p>
+                  )}
                   <p className="text-slate-500 dark:text-slate-400 text-[11px]">{currentSupplier?.kategoriBisnis}</p>
                   <p className="text-slate-500 flex items-center gap-1.5 mt-1 text-[11px]">
                     <MapPin className="w-3.5 h-3.5" />
