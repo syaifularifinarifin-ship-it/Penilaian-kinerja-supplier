@@ -22,7 +22,8 @@ import {
   Building2,
   Cpu,
   FileSpreadsheet,
-  FileJson
+  FileJson,
+  Download
 } from "lucide-react";
 
 export default function UnitDatabaseView() {
@@ -484,6 +485,37 @@ export default function UnitDatabaseView() {
 U5,Unit 5
 U6,Unit 6`;
 
+  // Download Excel (.xlsx) Template Loader for Database Unit
+  const downloadUnitTemplateXLSX = () => {
+    const data = [
+      {
+        kode: "U1",
+        nama: "PLTU Unit 1 (2x300MW)"
+      },
+      {
+        kode: "U2",
+        nama: "PLTU Unit 2 (2x300MW)"
+      },
+      {
+        kode: "U3",
+        nama: "PLTU Unit 3 (1x600MW)"
+      },
+      {
+        kode: "U4",
+        nama: "PLTU Unit 4 (1x600MW)"
+      },
+      {
+        kode: "U5",
+        nama: "PLTG Unit 5 (100MW)"
+      }
+    ];
+
+    const worksheet = XLSX.utils.json_to_sheet(data);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Template Unit");
+    XLSX.writeFile(workbook, "Template_Loader_Database_Unit.xlsx");
+  };
+
   return (
     <div className="space-y-6 animate-fade-in">
       {/* Title Header with Action Buttons */}
@@ -499,7 +531,17 @@ U6,Unit 6`;
         </div>
 
         {hasPermission("units") && (
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
+            {/* Download Template Loader Button */}
+            <button
+              onClick={downloadUnitTemplateXLSX}
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/40 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-900/50 rounded cursor-pointer transition-colors"
+              title="Unduh file template Excel (.xlsx) untuk loader/impor database unit"
+            >
+              <Download className="w-3.5 h-3.5" />
+              Unduh Template Loader (.xlsx)
+            </button>
+
             {/* Open Upload Panel Button */}
             <button
               onClick={() => setIsUploadOpen(true)}
@@ -738,11 +780,21 @@ U6,Unit 6`;
                   </div>
 
                   {/* Instructions */}
-                  <div className="bg-slate-50 dark:bg-slate-950 p-3.5 rounded border border-slate-100 dark:border-slate-800/60 space-y-2">
-                    <p className="text-[10px] font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1">
-                      <Info className="w-3.5 h-3.5 text-sky-500" /> Format Header Kolom Excel
-                    </p>
-                    <p className="text-[9px] text-slate-400">Format kolom wajib berisikan header <strong className="text-sky-600 font-mono">kode</strong> dan <strong className="text-sky-600 font-mono">nama</strong> seperti contoh berikut:</p>
+                  <div className="bg-slate-50 dark:bg-slate-950 p-3.5 rounded border border-slate-100 dark:border-slate-800/60 space-y-2.5">
+                    <div className="flex items-center justify-between">
+                      <p className="text-[10px] font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1">
+                        <Info className="w-3.5 h-3.5 text-sky-500" /> Petunjuk & File Template
+                      </p>
+                      <button
+                        onClick={downloadUnitTemplateXLSX}
+                        className="flex items-center gap-1 px-2.5 py-1 text-[10px] font-bold text-white bg-emerald-600 hover:bg-emerald-700 rounded shadow-xs cursor-pointer transition-colors"
+                      >
+                        <Download className="w-3 h-3" />
+                        Unduh Template .xlsx
+                      </button>
+                    </div>
+
+                    <p className="text-[9px] text-slate-400">Gunakan file template Excel di atas atau pastikan header kolom berisikan <strong className="text-sky-600 font-mono">kode</strong> dan <strong className="text-sky-600 font-mono">nama</strong>:</p>
                     
                     <div className="flex justify-between items-center bg-white dark:bg-slate-900 p-1.5 rounded text-[9px] font-mono border border-slate-200 dark:border-slate-800">
                       <span className="text-slate-500 text-[8px] font-mono">kode,nama</span>
