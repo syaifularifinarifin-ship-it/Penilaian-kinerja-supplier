@@ -35,8 +35,18 @@ export default function DashboardView() {
     selectedPeriode,
     setSelectedPeriode,
     setActiveTab,
-    setSelectedSupplierIdForRaport
+    setSelectedSupplierIdForRaport,
+    units,
+    currentUser
   } = useSuppliers();
+
+  // Unit restriction logic
+  const isUnitRestricted = !!(currentUser && currentUser.role !== "Administrator" && currentUser.unitId);
+  const userAssignedUnitId = isUnitRestricted ? currentUser.unitId : null;
+  const userAssignedUnitObj = userAssignedUnitId ? units.find(u => u.id === userAssignedUnitId) : null;
+
+  // Selected Unit filter for Admin / Unrestricted view
+  const [selectedUnitFilter, setSelectedUnitFilter] = useState<string>("Semua");
 
   // State for supplier quick registration modal
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -47,11 +57,14 @@ export default function DashboardView() {
   const [newSupEmail, setNewSupEmail] = useState("");
   const [newSupTelepon, setNewSupTelepon] = useState("");
   
-  // Filtering Evaluations based on Year and Period
+  // Filtering Evaluations based on Year, Period, and Unit Access
   const filteredEvals = evaluations.filter(e => {
     const matchYear = e.tahun === selectedYear;
     const matchPeriode = selectedPeriode === "Semua" ? true : e.periode === selectedPeriode;
-    return matchYear && matchPeriode;
+    const matchUnit = isUnitRestricted
+      ? e.unitId === userAssignedUnitId
+      : (selectedUnitFilter === "Semua" ? true : e.unitId === selectedUnitFilter);
+    return matchYear && matchPeriode && matchUnit;
   });
 
   // KPI Calculations
@@ -138,6 +151,29 @@ export default function DashboardView() {
               <option value="2024">Tahun 2024</option>
             </select>
           </div>
+
+          {/* Unit Filter or Restricted Badge */}
+          {isUnitRestricted ? (
+            <div className="flex items-center gap-1.5 bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 rounded px-2.5 py-1.5 text-xs text-amber-800 dark:text-amber-300 font-bold">
+              <span className="text-slate-400 font-normal">Unit:</span>
+              <span>[{userAssignedUnitObj?.kode || "Unit"}] {userAssignedUnitObj?.nama || "Pembangkit"}</span>
+              <span className="text-[9px] bg-amber-200/60 dark:bg-amber-900 px-1 py-0.2 rounded font-mono">🔒 Terkunci</span>
+            </div>
+          ) : (
+            <div className="flex items-center gap-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded px-2.5 py-1.5 text-xs">
+              <span className="text-slate-400 font-semibold text-[11px]">Unit:</span>
+              <select 
+                value={selectedUnitFilter} 
+                onChange={(e) => setSelectedUnitFilter(e.target.value)}
+                className="bg-transparent border-none text-slate-700 dark:text-slate-200 font-semibold focus:ring-0 outline-none text-xs"
+              >
+                <option value="Semua">Semua Unit Pembangkit</option>
+                {units.map(u => (
+                  <option key={u.id} value={u.id}>[{u.kode}] {u.nama}</option>
+                ))}
+              </select>
+            </div>
+          )}
 
           {/* Period Selector */}
           <div className="flex items-center gap-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded px-2.5 py-1.5 text-xs">

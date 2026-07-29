@@ -44,17 +44,25 @@ export default function RaportView() {
     setSelectedPeriode,
     selectedSupplierIdForRaport,
     setSelectedSupplierIdForRaport,
-    setActiveTab
+    setActiveTab,
+    units,
+    currentUser
   } = useSuppliers();
+
+  // Unit restriction logic
+  const isUnitRestricted = !!(currentUser && currentUser.role !== "Administrator" && currentUser.unitId);
+  const userAssignedUnitId = isUnitRestricted ? currentUser.unitId : null;
+  const userAssignedUnitObj = userAssignedUnitId ? units.find(u => u.id === userAssignedUnitId) : null;
 
   // Find currently selected supplier profile
   const currentSupplier = suppliers.find(s => s.id === selectedSupplierIdForRaport) || suppliers[0];
 
-  // Get all evaluations matching the selected supplier, year, and period
+  // Get all evaluations matching the selected supplier, year, period, and unit access restriction
   const periodEvals = evaluations.filter(e => 
     e.supplierId === (currentSupplier?.id || "") && 
     e.tahun === selectedYear &&
-    (selectedPeriode === "Semua" ? true : e.periode === selectedPeriode)
+    (selectedPeriode === "Semua" ? true : e.periode === selectedPeriode) &&
+    (isUnitRestricted ? e.unitId === userAssignedUnitId : true)
   );
 
   const totalPoCount = periodEvals.length;

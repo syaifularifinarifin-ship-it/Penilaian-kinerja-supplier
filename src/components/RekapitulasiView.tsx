@@ -36,12 +36,20 @@ export default function RekapitulasiView() {
     setSelectedYear,
     selectedPeriode,
     setSelectedPeriode,
-    hasPermission
+    hasPermission,
+    units,
+    currentUser
   } = useSuppliers();
+
+  // Unit restriction logic
+  const isUnitRestricted = !!(currentUser && currentUser.role !== "Administrator" && currentUser.unitId);
+  const userAssignedUnitId = isUnitRestricted ? currentUser.unitId : null;
+  const userAssignedUnitObj = userAssignedUnitId ? units.find(u => u.id === userAssignedUnitId) : null;
 
   // Search and advanced filter state
   const [searchTerm, setSearchTerm] = useState("");
   const [predikatFilter, setPredikatFilter] = useState("Semua");
+  const [unitFilter, setUnitFilter] = useState("Semua");
   const [sortBy, setSortBy] = useState<"nama" | "nilaiAkhir" | "tahun">("nilaiAkhir");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
 
@@ -140,7 +148,12 @@ export default function RekapitulasiView() {
     // Predikat filter
     const matchPredikat = predikatFilter === "Semua" ? true : item.predikat === predikatFilter;
 
-    return matchSearch && matchYear && matchPeriod && matchPredikat;
+    // Unit filter
+    const matchUnit = isUnitRestricted
+      ? item.unitId === userAssignedUnitId
+      : (unitFilter === "Semua" ? true : item.unitId === unitFilter);
+
+    return matchSearch && matchYear && matchPeriod && matchPredikat && matchUnit;
   });
 
   // Decide display evaluations depending on chosen viewMode (Average per Supplier vs Detail)
@@ -801,6 +814,27 @@ export default function RekapitulasiView() {
             </select>
           </div>
 
+          {/* Unit select or locked badge */}
+          <div className="flex flex-col">
+            {isUnitRestricted ? (
+              <div className="px-3 py-2 text-xs bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 rounded text-amber-800 dark:text-amber-300 font-bold truncate flex items-center justify-between">
+                <span>Unit: [{userAssignedUnitObj?.kode}]</span>
+                <span className="text-[9px] bg-amber-200/60 dark:bg-amber-900 px-1 rounded">🔒</span>
+              </div>
+            ) : (
+              <select
+                value={unitFilter}
+                onChange={(e) => { setUnitFilter(e.target.value); setCurrentPage(1); }}
+                className="px-3 py-2 text-xs bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded focus:outline-hidden focus:ring-1 focus:ring-sky-500 text-slate-900 dark:text-white font-bold"
+              >
+                <option value="Semua">Semua Unit</option>
+                {units.map(u => (
+                  <option key={u.id} value={u.id}>[{u.kode}] {u.nama}</option>
+                ))}
+              </select>
+            )}
+          </div>
+
           {/* Reset Filters Quick link */}
           <button
             onClick={() => {
@@ -808,6 +842,7 @@ export default function RekapitulasiView() {
               setPredikatFilter("Semua");
               setSelectedYear(2026);
               setSelectedPeriode("Semester 1");
+              setUnitFilter("Semua");
               setCurrentPage(1);
             }}
             className="px-3 py-2 text-xs font-bold text-slate-500 dark:text-slate-400 hover:text-slate-700 bg-slate-100 dark:bg-slate-800 rounded hover:bg-slate-200 border border-slate-200 dark:border-slate-700 transition-colors cursor-pointer"

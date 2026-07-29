@@ -43,8 +43,15 @@ export default function SupplierDatabaseView() {
     addLog,
     setActiveTab,
     setSelectedSupplierIdForRaport,
-    hasPermission
+    hasPermission,
+    units,
+    currentUser
   } = useSuppliers();
+
+  // Unit restriction logic
+  const isUnitRestricted = !!(currentUser && currentUser.role !== "Administrator" && currentUser.unitId);
+  const userAssignedUnitId = isUnitRestricted ? currentUser.unitId : null;
+  const userAssignedUnitObj = userAssignedUnitId ? units.find(u => u.id === userAssignedUnitId) : null;
 
   // State Management
   const [searchTerm, setSearchTerm] = useState("");
@@ -77,7 +84,7 @@ export default function SupplierDatabaseView() {
 
   // Map each supplier to its evaluation stats
   const supplierStats = suppliers.map(sup => {
-    const supEvals = evaluations.filter(e => e.supplierId === sup.id);
+    const supEvals = evaluations.filter(e => e.supplierId === sup.id && (isUnitRestricted ? e.unitId === userAssignedUnitId : true));
     const evalCount = supEvals.length;
     const avgScore = evalCount > 0 
       ? Math.round((supEvals.reduce((acc, curr) => acc + curr.nilaiAkhir, 0) / evalCount) * 100) / 100

@@ -51,9 +51,14 @@ export default function InputPenilaianView() {
     currentUser
   } = useSuppliers();
 
+  // Check if current logged-in user is restricted to a single assigned unit
+  const isUnitRestricted = !!(currentUser && currentUser.role !== "Administrator" && currentUser.unitId);
+  const userAssignedUnitId = isUnitRestricted ? currentUser.unitId : null;
+  const userAssignedUnitObj = userAssignedUnitId ? units.find(u => u.id === userAssignedUnitId) : null;
+
   // Selected Supplier
   const [supplierId, setSupplierId] = useState("");
-  const [unitId, setUnitId] = useState("");
+  const [unitId, setUnitId] = useState(userAssignedUnitId || "");
   const [tahun, setTahun] = useState<number>(selectedYear);
   const [periode, setPeriode] = useState<string>(selectedPeriode === "Semua" ? "Semester 1" : selectedPeriode);
   
@@ -133,12 +138,14 @@ export default function InputPenilaianView() {
     }
   }, [suppliers, supplierId, editingEvaluation]);
 
-  // Set first unit as default when units load
+  // Set default unit (or enforce assigned unit) when units load or user changes
   useEffect(() => {
-    if (units.length > 0 && !unitId && !editingEvaluation) {
+    if (isUnitRestricted && userAssignedUnitId) {
+      setUnitId(userAssignedUnitId);
+    } else if (units.length > 0 && !unitId && !editingEvaluation) {
       setUnitId(units[0].id);
     }
-  }, [units, unitId, editingEvaluation]);
+  }, [units, unitId, editingEvaluation, isUnitRestricted, userAssignedUnitId]);
 
   // Handle score change
   const handleScoreChange = (key: AspectKey, val: number) => {
@@ -187,7 +194,8 @@ export default function InputPenilaianView() {
       return;
     }
 
-    const selectedUnit = units.find(u => u.id === unitId);
+    const activeUnitId = isUnitRestricted && userAssignedUnitId ? userAssignedUnitId : unitId;
+    const selectedUnit = units.find(u => u.id === activeUnitId);
 
     const evaluationPayload = {
       supplierId,
@@ -607,6 +615,15 @@ export default function InputPenilaianView() {
         </div>
       </div>
 
+      {isUnitRestricted && userAssignedUnitObj && (
+        <div className="p-3.5 bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 text-amber-900 dark:text-amber-200 rounded-lg flex items-center gap-2.5 text-xs font-medium">
+          <AlertCircle className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0" />
+          <span>
+            <strong>Hak Akses Terbatas Unit:</strong> Anda terdaftar khusus untuk <strong>[{userAssignedUnitObj.kode}] {userAssignedUnitObj.nama}</strong>. Lembaran evaluasi dan penilaian hanya akan tersimpan untuk unit penugasan Anda.
+          </span>
+        </div>
+      )}
+
       {errorMsg && (
         <div className="p-4 bg-rose-50 dark:bg-rose-950/40 border border-rose-250 dark:border-rose-900 text-rose-700 dark:text-rose-400 rounded flex items-center gap-2 text-xs">
           <AlertCircle className="w-4 h-4 flex-shrink-0" />
@@ -719,14 +736,24 @@ export default function InputPenilaianView() {
 
               {/* Unit Pembangkit Selection */}
               <div className="space-y-1.5 flex flex-col justify-end">
-                <label className="text-[10px] font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider flex items-center gap-1">
-                  <Cpu className="w-3.5 h-3.5 text-slate-400" />
-                  Unit Pembangkit *
+                <label className="text-[10px] font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider flex items-center justify-between">
+                  <span className="flex items-center gap-1">
+                    <Cpu className="w-3.5 h-3.5 text-slate-400" />
+                    Unit Pembangkit *
+                  </span>
+                  {isUnitRestricted && (
+                    <span className="text-[9px] px-1.5 py-0.2 bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300 rounded font-bold border border-amber-300 dark:border-amber-800">
+                      🔒 Terkunci
+                    </span>
+                  )}
                 </label>
                 <select
-                  value={unitId}
+                  value={isUnitRestricted ? (userAssignedUnitId || "") : unitId}
+                  disabled={isUnitRestricted}
                   onChange={(e) => setUnitId(e.target.value)}
-                  className="w-full px-2.5 py-1.5 text-xs bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded focus:ring-1 focus:ring-sky-500 focus:outline-hidden text-slate-900 dark:text-white"
+                  className={`w-full px-2.5 py-1.5 text-xs bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded focus:ring-1 focus:ring-sky-500 focus:outline-hidden text-slate-900 dark:text-white ${
+                    isUnitRestricted ? "cursor-not-allowed bg-amber-50/50 dark:bg-amber-950/20 font-semibold text-sky-800 dark:text-sky-300 border-amber-300 dark:border-amber-800" : ""
+                  }`}
                 >
                   <option value="">-- Pilih Unit --</option>
                   {units.map(u => (
