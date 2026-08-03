@@ -499,22 +499,28 @@ export default function SettingsView() {
                 </div>
 
                 <div className="space-y-1">
-                  <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Unit Pembangkit Penugasan</label>
+                  <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider flex items-center justify-between">
+                    <span>Unit Pembangkit Penugasan</span>
+                    <span className="text-[9px] text-indigo-500 dark:text-indigo-400 font-normal">Pembatasan Hak Akses Unit</span>
+                  </label>
                   <div className="relative">
                     <Database className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
                     <select
                       value={profileUnitId}
                       onChange={(e) => setProfileUnitId(e.target.value)}
-                      className="w-full pl-9 pr-3 py-1.5 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded focus:ring-1 focus:ring-indigo-500 focus:outline-hidden text-slate-900 dark:text-white"
+                      className="w-full pl-9 pr-3 py-1.5 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded focus:ring-1 focus:ring-indigo-500 focus:outline-hidden text-slate-900 dark:text-white font-semibold"
                     >
                       <option value="">Semua Unit (Pusat / Seluruh Pembangkit)</option>
                       {units.map((u) => (
                         <option key={u.id} value={u.id}>
-                          {u.nama} ({u.kode})
+                          [{u.kode}] {u.nama}
                         </option>
                       ))}
                     </select>
                   </div>
+                  <p className="text-[9px] text-slate-400">
+                    Unit penugasan menentukan pembatasan akses data unit saat Anda melakukan input evaluasi & melihat laporan rekapitulasi.
+                  </p>
                 </div>
 
                 <div className="flex justify-end pt-2 border-t border-slate-100 dark:border-slate-800/85">
@@ -743,19 +749,25 @@ export default function SettingsView() {
                   </div>
 
                   <div className="space-y-1">
-                    <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Unit Pembangkit Penugasan</label>
+                    <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider flex items-center justify-between">
+                      <span>Unit Pembangkit Penugasan</span>
+                      <span className="text-[9px] text-indigo-500 dark:text-indigo-400 font-normal">Membatasi Akses Unit</span>
+                    </label>
                     <select
                       value={formUnitId}
                       onChange={(e) => setFormUnitId(e.target.value)}
-                      className="w-full px-3 py-1.5 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded focus:ring-1 focus:ring-indigo-500 focus:outline-hidden text-slate-900 dark:text-white"
+                      className="w-full px-3 py-1.5 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded focus:ring-1 focus:ring-indigo-500 focus:outline-hidden text-slate-900 dark:text-white font-semibold"
                     >
                       <option value="">Semua Unit (Pusat / Seluruh Pembangkit)</option>
                       {units.map((u) => (
                         <option key={u.id} value={u.id}>
-                          {u.nama} ({u.kode})
+                          [{u.kode}] {u.nama}
                         </option>
                       ))}
                     </select>
+                    <p className="text-[9px] text-slate-400 leading-tight">
+                      Pengguna non-admin yang ditempatkan di unit khusus hanya dapat menginput dan membaca evaluasi unit tersebut.
+                    </p>
                   </div>
                 </div>
 
@@ -924,18 +936,47 @@ export default function SettingsView() {
                               </div>
                             </td>
 
-                            {/* Credentials / Role column */}
+                             {/* Credentials / Role & Unit Penugasan column */}
                             <td className="px-5 py-4">
-                              <div>
+                              <div className="space-y-1">
                                 <span className="inline-block text-[10px] font-bold px-2 py-0.5 rounded-sm bg-indigo-50 dark:bg-indigo-950/30 text-indigo-600 dark:text-indigo-400 border border-indigo-100 dark:border-indigo-900/40">
                                   {user.role}
                                 </span>
-                                <div className="text-[10px] text-slate-400 font-mono mt-1">
+                                <div className="text-[10px] text-slate-400 font-mono">
                                   Sandi: <span className="text-slate-600 dark:text-slate-300 font-semibold">{user.password}</span>
                                 </div>
-                                <div className="text-[10px] text-slate-500 font-medium mt-0.5">
-                                  Unit: <span className="text-indigo-600 dark:text-indigo-450 font-bold">{units.find(u => u.id === user.unitId)?.nama || "Semua Unit"}</span>
+                                
+                                <div className="flex items-center gap-1 mt-1">
+                                  <Cpu className="w-3 h-3 text-sky-500 shrink-0" />
+                                  <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400">Unit Penugasan:</span>
                                 </div>
+
+                                {hasPermission("users") ? (
+                                  <select
+                                    value={user.unitId || ""}
+                                    onChange={(e) => {
+                                      const newUnitId = e.target.value;
+                                      const updatedUser = { ...user, unitId: newUnitId };
+                                      updateSystemUser(updatedUser);
+                                      if (currentUser?.id === user.id) {
+                                        setCurrentUser(updatedUser);
+                                      }
+                                      addLog("Atur Unit Penugasan", `Mengubah unit penugasan ${user.nama} menjadi ${units.find(u => u.id === newUnitId)?.nama || "Semua Unit (Pusat)"}`);
+                                    }}
+                                    className="text-[10px] font-extrabold bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-indigo-700 dark:text-indigo-300 rounded px-1.5 py-0.5 focus:outline-hidden focus:ring-1 focus:ring-indigo-500 cursor-pointer max-w-[200px] truncate"
+                                  >
+                                    <option value="">Semua Unit (Pusat)</option>
+                                    {units.map((u) => (
+                                      <option key={u.id} value={u.id}>
+                                        [{u.kode}] {u.nama}
+                                      </option>
+                                    ))}
+                                  </select>
+                                ) : (
+                                  <div className="text-[10px] font-bold text-indigo-600 dark:text-indigo-400">
+                                    {units.find(u => u.id === user.unitId)?.nama ? `[${units.find(u => u.id === user.unitId)?.kode}] ${units.find(u => u.id === user.unitId)?.nama}` : "Semua Unit (Pusat)"}
+                                  </div>
+                                )}
                               </div>
                             </td>
 
