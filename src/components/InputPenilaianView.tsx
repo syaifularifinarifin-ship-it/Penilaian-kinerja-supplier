@@ -51,9 +51,9 @@ export default function InputPenilaianView() {
     currentUser
   } = useSuppliers();
 
-  // Check if current logged-in user is restricted to a single assigned unit
+  // User unit assignment check
+  const userAssignedUnitId = currentUser?.unitId || null;
   const isUnitRestricted = !!(currentUser && currentUser.role !== "Administrator" && currentUser.unitId);
-  const userAssignedUnitId = isUnitRestricted ? currentUser.unitId : null;
   const userAssignedUnitObj = userAssignedUnitId ? units.find(u => u.id === userAssignedUnitId) : null;
 
   // Selected Supplier
@@ -110,7 +110,9 @@ export default function InputPenilaianView() {
       if (suppliers.length > 0 && !supplierId) {
         setSupplierId(suppliers[0].id);
       }
-      if (units.length > 0 && !unitId) {
+      if (userAssignedUnitId) {
+        setUnitId(userAssignedUnitId);
+      } else if (units.length > 0 && !unitId) {
         setUnitId(units[0].id);
       }
       setTanggalPenilaian(new Date().toISOString().split("T")[0]);
@@ -129,7 +131,7 @@ export default function InputPenilaianView() {
         energi: 4.0,
       });
     }
-  }, [editingEvaluation, suppliers, units, currentUser]);
+  }, [editingEvaluation, suppliers, units, currentUser, userAssignedUnitId]);
 
   // Set first supplier as default when suppliers load
   useEffect(() => {
@@ -138,14 +140,16 @@ export default function InputPenilaianView() {
     }
   }, [suppliers, supplierId, editingEvaluation]);
 
-  // Set default unit (or enforce assigned unit) when units load or user changes
+  // Set default unit automatically matching user assignment in user settings when units load or user changes
   useEffect(() => {
-    if (isUnitRestricted && userAssignedUnitId) {
+    if (editingEvaluation) return;
+
+    if (userAssignedUnitId) {
       setUnitId(userAssignedUnitId);
-    } else if (units.length > 0 && !unitId && !editingEvaluation) {
+    } else if (units.length > 0 && (!unitId || !units.some(u => u.id === unitId))) {
       setUnitId(units[0].id);
     }
-  }, [units, unitId, editingEvaluation, isUnitRestricted, userAssignedUnitId]);
+  }, [units, userAssignedUnitId, editingEvaluation]);
 
   // Handle score change
   const handleScoreChange = (key: AspectKey, val: number) => {
