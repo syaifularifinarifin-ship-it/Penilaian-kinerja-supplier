@@ -22,7 +22,8 @@ import {
   Briefcase,
   Printer,
   ArrowLeft,
-  Building2
+  Building2,
+  Paperclip
 } from "lucide-react";
 
 export default function RekapitulasiView() {
@@ -404,6 +405,27 @@ export default function RekapitulasiView() {
                   <p className="font-medium text-slate-700 text-[11px] truncate" title={item.deskripsiPo}>{item.deskripsiPo}</p>
                 </div>
               )}
+            </div>
+          )}
+
+          {/* File Lampiran Dokumen PDF (If Attached) */}
+          {item.lampiranPdf && (
+            <div className="bg-rose-50/70 p-3.5 rounded-lg border border-rose-200 flex items-center justify-between gap-3 text-xs">
+              <div className="flex items-center gap-2.5 overflow-hidden">
+                <Paperclip className="w-4 h-4 text-rose-600 shrink-0" />
+                <div className="overflow-hidden">
+                  <p className="font-bold text-slate-900 text-[11px] truncate">{item.lampiranNama || "Dokumen_Lampiran_Evaluasi.pdf"}</p>
+                  <p className="text-[9px] text-slate-500 font-medium">Dokumen Bukti Lampiran PDF Resmi Terlampir</p>
+                </div>
+              </div>
+              <a
+                href={item.lampiranPdf}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="no-print px-3 py-1.5 text-xs font-bold text-white bg-rose-600 hover:bg-rose-700 rounded-md transition-colors shrink-0 cursor-pointer flex items-center gap-1 shadow-xs"
+              >
+                <Download className="w-3.5 h-3.5" /> Buka / Unduh PDF
+              </a>
             </div>
           )}
 
@@ -911,6 +933,17 @@ export default function RekapitulasiView() {
                             >
                               PO: {item.noPo}
                             </span>
+                          )}
+                          {item.lampiranPdf && (
+                            <a
+                              href={item.lampiranPdf}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center gap-0.5 text-[8.5px] px-1.5 py-0.2 bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/50 dark:hover:bg-rose-900/80 text-rose-700 dark:text-rose-300 rounded font-bold border border-rose-200 dark:border-rose-900/40 transition-colors cursor-pointer"
+                              title={`Unduh / Buka File PDF: ${item.lampiranNama || 'Lampiran'}`}
+                            >
+                              <Paperclip className="w-2.5 h-2.5" /> PDF
+                            </a>
                           )}
                         </div>
                       </div>

@@ -32,7 +32,11 @@ import {
   Cpu,
   Printer,
   ArrowLeft,
-  Check
+  Check,
+  Paperclip,
+  Upload,
+  Download,
+  Trash2
 } from "lucide-react";
 
 export default function InputPenilaianView() {
@@ -80,9 +84,47 @@ export default function InputPenilaianView() {
   const [noPo, setNoPo] = useState("");
   const [deskripsiPo, setDeskripsiPo] = useState("");
   const [tanggalPo, setTanggalPo] = useState("");
+  const [lampiranPdf, setLampiranPdf] = useState<string>("");
+  const [lampiranNama, setLampiranNama] = useState<string>("");
+  const [lampiranUkuran, setLampiranUkuran] = useState<string>("");
   const [errorMsg, setErrorMsg] = useState("");
   const [showPrintPreview, setShowPrintPreview] = useState(false);
   const [isPrintBlankForm, setIsPrintBlankForm] = useState(false);
+
+  // File Upload Handler for PDF Attachments
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.type !== "application/pdf" && !file.name.toLowerCase().endsWith(".pdf")) {
+      setErrorMsg("Format file lampiran harus berupa dokumen PDF (.pdf).");
+      return;
+    }
+
+    if (file.size > 15 * 1024 * 1024) {
+      setErrorMsg("Ukuran file PDF terlalu besar (maksimal 15 MB).");
+      return;
+    }
+
+    setErrorMsg("");
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const result = event.target?.result as string;
+      setLampiranPdf(result);
+      setLampiranNama(file.name);
+      setLampiranUkuran(`${(file.size / (1024 * 1024)).toFixed(2)} MB`);
+    };
+    reader.onerror = () => {
+      setErrorMsg("Gagal membaca file PDF. Silakan coba lagi.");
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleRemoveLampiran = () => {
+    setLampiranPdf("");
+    setLampiranNama("");
+    setLampiranUkuran("");
+  };
 
   // Quick Inline Supplier registration
   const [isInlineSupOpen, setIsInlineSupOpen] = useState(false);
@@ -105,6 +147,9 @@ export default function InputPenilaianView() {
       setNoPo(editingEvaluation.noPo || "");
       setDeskripsiPo(editingEvaluation.deskripsiPo || "");
       setTanggalPo(editingEvaluation.tanggalPo || "");
+      setLampiranPdf(editingEvaluation.lampiranPdf || "");
+      setLampiranNama(editingEvaluation.lampiranNama || "");
+      setLampiranUkuran(editingEvaluation.lampiranPdf ? "PDF Terlampir" : "");
     } else {
       // Default reset
       if (suppliers.length > 0 && !supplierId) {
@@ -119,6 +164,9 @@ export default function InputPenilaianView() {
       setNoPo("");
       setDeskripsiPo("");
       setTanggalPo("");
+      setLampiranPdf("");
+      setLampiranNama("");
+      setLampiranUkuran("");
       setEvaluator(currentUser ? `${currentUser.nama} (${currentUser.role})` : "Syaiful Arifin (Manajer Logistik)");
       setScores({
         integritas: 4.0,
@@ -215,7 +263,9 @@ export default function InputPenilaianView() {
       tanggalPenilaian,
       noPo: noPo.trim(),
       deskripsiPo: deskripsiPo.trim(),
-      tanggalPo: tanggalPo || undefined
+      tanggalPo: tanggalPo || undefined,
+      lampiranPdf: lampiranPdf || undefined,
+      lampiranNama: lampiranNama || undefined
     };
 
     if (editingEvaluation) {
@@ -238,6 +288,9 @@ export default function InputPenilaianView() {
     setNoPo("");
     setDeskripsiPo("");
     setTanggalPo("");
+    setLampiranPdf("");
+    setLampiranNama("");
+    setLampiranUkuran("");
     setUnitId(units.length > 0 ? units[0].id : "");
     setActiveTab("rekap");
   };
@@ -249,6 +302,9 @@ export default function InputPenilaianView() {
     setNoPo("");
     setDeskripsiPo("");
     setTanggalPo("");
+    setLampiranPdf("");
+    setLampiranNama("");
+    setLampiranUkuran("");
     setUnitId(units.length > 0 ? units[0].id : "");
     setActiveTab("rekap");
   };
@@ -884,6 +940,78 @@ export default function InputPenilaianView() {
                     className="w-full px-2.5 py-1.5 text-xs bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded focus:ring-1 focus:ring-sky-500 focus:outline-hidden text-slate-900 dark:text-white"
                   />
                 </div>
+              </div>
+
+              {/* Section Lampiran File PDF */}
+              <div className="border-t border-slate-100 dark:border-slate-800/80 pt-3.5 space-y-2">
+                <p className="text-[10px] font-extrabold text-[#0284c7] dark:text-sky-400 uppercase tracking-wider flex items-center gap-1">
+                  <Paperclip className="w-3.5 h-3.5" /> File Lampiran Dokumen Evaluasi (PDF)
+                </p>
+                
+                {!lampiranPdf ? (
+                  <div className="border-2 border-dashed border-slate-200 dark:border-slate-700 hover:border-sky-500 dark:hover:border-sky-500 rounded-lg p-4 bg-slate-50/50 dark:bg-slate-900/50 transition-colors text-center cursor-pointer relative group">
+                    <input
+                      type="file"
+                      accept="application/pdf,.pdf"
+                      onChange={handleFileUpload}
+                      className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                    />
+                    <div className="flex flex-col items-center justify-center space-y-1">
+                      <div className="p-2 bg-sky-50 dark:bg-sky-950/60 text-sky-600 dark:text-sky-400 rounded-full group-hover:scale-105 transition-transform">
+                        <Upload className="w-5 h-5" />
+                      </div>
+                      <div>
+                        <p className="text-xs font-bold text-slate-700 dark:text-slate-200">
+                          Klik atau Unggah File PDF Lampiran
+                        </p>
+                        <p className="text-[10px] text-slate-400">
+                          Format .pdf (Dokumen Berita Acara, Laporan Evaluasi, SPK, atau PO) &bull; Maksimal 15MB
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="p-3 bg-sky-50/60 dark:bg-sky-950/40 border border-sky-200 dark:border-sky-800 rounded-lg flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                    <div className="flex items-center gap-3 overflow-hidden">
+                      <div className="p-2 bg-rose-100 dark:bg-rose-950/80 text-rose-600 dark:text-rose-400 rounded shrink-0">
+                        <FileText className="w-6 h-6" />
+                      </div>
+                      <div className="overflow-hidden">
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs font-bold text-slate-900 dark:text-white truncate max-w-[280px]">
+                            {lampiranNama || "Dokumen_Lampiran_Evaluasi.pdf"}
+                          </span>
+                          <span className="text-[9px] px-1.5 py-0.2 bg-rose-100 text-rose-700 dark:bg-rose-950 dark:text-rose-300 font-bold rounded">
+                            PDF
+                          </span>
+                        </div>
+                        <p className="text-[10px] text-slate-500 dark:text-slate-400 font-mono mt-0.5">
+                          {lampiranUkuran ? `Ukuran: ${lampiranUkuran}` : "Dokumen PDF terlampir"}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2 shrink-0 self-end sm:self-auto">
+                      <a
+                        href={lampiranPdf}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="px-2.5 py-1 text-xs font-semibold text-sky-700 bg-sky-100 hover:bg-sky-200 dark:bg-sky-900/60 dark:text-sky-300 rounded flex items-center gap-1 transition-colors"
+                      >
+                        <Download className="w-3.5 h-3.5" />
+                        Buka PDF
+                      </a>
+                      <button
+                        type="button"
+                        onClick={handleRemoveLampiran}
+                        className="px-2.5 py-1 text-xs font-semibold text-rose-700 bg-rose-100 hover:bg-rose-200 dark:bg-rose-950/80 dark:text-rose-300 rounded flex items-center gap-1 transition-colors cursor-pointer"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                        Hapus
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           </div>

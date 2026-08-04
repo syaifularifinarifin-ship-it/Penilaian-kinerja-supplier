@@ -45,6 +45,8 @@ export interface Evaluation {
   noPo?: string;
   deskripsiPo?: string;
   tanggalPo?: string;
+  lampiranPdf?: string;
+  lampiranNama?: string;
 }
 
 export interface ActivityLog {

@@ -31,7 +31,9 @@ import {
   ExternalLink,
   ChevronRight,
   HelpCircle,
-  FileSignature
+  FileSignature,
+  Paperclip,
+  Download
 } from "lucide-react";
 
 export default function RaportView() {
@@ -324,6 +326,31 @@ export default function RaportView() {
                     <p className="font-medium text-slate-700 dark:text-slate-300 text-[11px] line-clamp-2" title={activeEval.deskripsiPo}>{activeEval.deskripsiPo}</p>
                   </div>
                 )}
+              </div>
+            )}
+
+            {/* Lampiran Dokumen PDF */}
+            {activeEval.lampiranPdf && (
+              <div className="bg-rose-50/70 dark:bg-rose-950/40 p-3.5 rounded-lg border border-rose-200 dark:border-rose-900/50 flex items-center justify-between gap-3 text-xs">
+                <div className="flex items-center gap-2.5 overflow-hidden">
+                  <div className="p-2 bg-rose-100 dark:bg-rose-900/60 text-rose-600 dark:text-rose-300 rounded shrink-0">
+                    <Paperclip className="w-4 h-4" />
+                  </div>
+                  <div className="overflow-hidden">
+                    <p className="font-bold text-slate-900 dark:text-white text-[11px] truncate">
+                      {activeEval.lampiranNama || "Dokumen_Lampiran_Evaluasi.pdf"}
+                    </p>
+                    <p className="text-[9px] text-slate-500 dark:text-slate-400 font-medium">Dokumen Bukti Lampiran PDF Terlampir</p>
+                  </div>
+                </div>
+                <a
+                  href={activeEval.lampiranPdf}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="px-3 py-1.5 text-xs font-bold text-white bg-rose-600 hover:bg-rose-700 rounded-md transition-colors shrink-0 cursor-pointer flex items-center gap-1 shadow-xs"
+                >
+                  <Download className="w-3.5 h-3.5" /> Buka / Unduh PDF
+                </a>
               </div>
             )}
 
