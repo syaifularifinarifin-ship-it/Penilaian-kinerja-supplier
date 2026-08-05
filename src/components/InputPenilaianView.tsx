@@ -36,7 +36,8 @@ import {
   Paperclip,
   Upload,
   Download,
-  Trash2
+  Trash2,
+  Search
 } from "lucide-react";
 
 export default function InputPenilaianView() {
@@ -61,8 +62,21 @@ export default function InputPenilaianView() {
   const isUnitRestricted = !!(currentUser && currentUser.role !== "Administrator" && currentUser.unitId);
   const userAssignedUnitObj = userAssignedUnitId ? units.find(u => u.id === userAssignedUnitId) : null;
 
-  // Selected Supplier
+  // Selected Supplier & Search
   const [supplierId, setSupplierId] = useState("");
+  const [supplierSearchQuery, setSupplierSearchQuery] = useState("");
+
+  const selectedSupplier = suppliers.find(s => s.id === supplierId);
+  const filteredSuppliers = suppliers.filter(s => {
+    if (!supplierSearchQuery.trim()) return true;
+    const q = supplierSearchQuery.toLowerCase().trim();
+    return (
+      s.nama.toLowerCase().includes(q) ||
+      (s.noVendorEllipse && s.noVendorEllipse.toLowerCase().includes(q)) ||
+      (s.kategoriBisnis && s.kategoriBisnis.toLowerCase().includes(q)) ||
+      (s.kontak && s.kontak.toLowerCase().includes(q))
+    );
+  });
   const [unitId, setUnitId] = useState(userAssignedUnitId || "");
   const [tahun, setTahun] = useState<number>(selectedYear);
   const [periode, setPeriode] = useState<string>(selectedPeriode === "Semua" ? "Semester 1" : selectedPeriode);
@@ -806,17 +820,78 @@ export default function InputPenilaianView() {
                     </div>
                   </div>
                 ) : (
-                  <select
-                    value={supplierId}
-                    onChange={(e) => setSupplierId(e.target.value)}
-                    className="w-full px-2.5 py-1.5 text-xs bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded focus:ring-1 focus:ring-sky-500 focus:outline-hidden text-slate-900 dark:text-white"
-                  >
-                    {suppliers.map(s => (
-                      <option key={s.id} value={s.id}>
-                        {s.nama} {s.noVendorEllipse ? `[Ellipse: ${s.noVendorEllipse}]` : ""} ({s.kategoriBisnis})
-                      </option>
-                    ))}
-                  </select>
+                  <div className="space-y-1.5">
+                    {/* Search Supplier Bar */}
+                    <div className="relative">
+                      <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                      <input 
+                        type="text"
+                        value={supplierSearchQuery}
+                        onChange={(e) => setSupplierSearchQuery(e.target.value)}
+                        placeholder="Cari Supplier (Nama, No. Ellipse, Kategori...)"
+                        className="w-full pl-8 pr-7 py-1.5 text-xs bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded focus:ring-1 focus:ring-sky-500 focus:outline-hidden text-slate-900 dark:text-white"
+                      />
+                      {supplierSearchQuery && (
+                        <button
+                          type="button"
+                          onClick={() => setSupplierSearchQuery("")}
+                          className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 cursor-pointer"
+                          title="Bersihkan Pencarian"
+                        >
+                          <X className="w-3.5 h-3.5" />
+                        </button>
+                      )}
+                    </div>
+
+                    {/* Filtered Dropdown Select */}
+                    <select
+                      value={supplierId}
+                      onChange={(e) => setSupplierId(e.target.value)}
+                      className="w-full px-2.5 py-1.5 text-xs bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded focus:ring-1 focus:ring-sky-500 focus:outline-hidden text-slate-900 dark:text-white font-medium cursor-pointer"
+                    >
+                      {filteredSuppliers.length === 0 ? (
+                        <option value="" disabled>-- Tidak ada supplier yang cocok --</option>
+                      ) : (
+                        filteredSuppliers.map(s => (
+                          <option key={s.id} value={s.id}>
+                            {s.nama} {s.noVendorEllipse ? `[Ellipse: ${s.noVendorEllipse}]` : ""} ({s.kategoriBisnis})
+                          </option>
+                        ))
+                      )}
+                    </select>
+
+                    {/* Active Selected Supplier Summary Badge */}
+                    {selectedSupplier && (
+                      <div className="flex items-center justify-between text-[11px] px-2.5 py-1 bg-sky-50/80 dark:bg-sky-950/40 border border-sky-200 dark:border-sky-800/60 rounded text-sky-900 dark:text-sky-300 font-medium">
+                        <span className="truncate flex items-center gap-1.5">
+                          <span className="w-1.5 h-1.5 rounded-full bg-sky-500 shrink-0"></span>
+                          <span className="font-bold">{selectedSupplier.nama}</span>
+                        </span>
+                        <span className="text-[10px] text-sky-700 dark:text-sky-400 shrink-0 font-mono font-semibold ml-2">
+                          {selectedSupplier.noVendorEllipse ? `Ellipse: ${selectedSupplier.noVendorEllipse}` : selectedSupplier.kategoriBisnis}
+                        </span>
+                      </div>
+                    )}
+
+                    {/* Search Result Counter & Quick Add Supplier Action */}
+                    {supplierSearchQuery.trim() && (
+                      <div className="flex items-center justify-between text-[10px] text-slate-500 dark:text-slate-400">
+                        <span>Ditemukan <strong>{filteredSuppliers.length}</strong> supplier dari {suppliers.length}</span>
+                        {filteredSuppliers.length === 0 && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setNewSupNama(supplierSearchQuery);
+                              setIsInlineSupOpen(true);
+                            }}
+                            className="text-sky-600 dark:text-sky-400 font-bold hover:underline cursor-pointer flex items-center gap-1"
+                          >
+                            <Plus className="w-3 h-3" /> Tambah "{supplierSearchQuery}"
+                          </button>
+                        )}
+                      </div>
+                    )}
+                  </div>
                 )}
               </div>
 
