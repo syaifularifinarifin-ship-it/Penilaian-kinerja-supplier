@@ -123,7 +123,7 @@ export default function RekapitulasiView() {
         scores: avgScores,
         nilaiAkhir: avgNilaiAkhir,
         predikat,
-        rekomendasi: items.map(e => e.rekomendasi).filter(Boolean).join(" | ") || `Kinerja dinilai ${predikat} dengan rata-rata tertimbang ${avgNilaiAkhir.toFixed(2)}.`,
+        rekomendasi: items.map(e => e.rekomendasi).filter(Boolean).join(" | ") || `Kinerja dinilai ${predikat} dengan rata-rata tertimbang ${Math.round(avgNilaiAkhir)}.`,
         evaluator: "Sistem (Konsolidasi Rata-rata)",
         tanggalPenilaian: new Date().toLocaleDateString('id-ID', { year: 'numeric', month: 'long', day: 'numeric' }),
         noPo: pos || "-",
@@ -456,9 +456,9 @@ export default function RekapitulasiView() {
                         <p className="font-bold text-slate-800 text-xs">{label}</p>
                         <p className="text-[10px] text-slate-400 leading-relaxed mt-0.5">{ASPECT_DESCRIPTIONS[key].replace(/\n/g, "; ")}</p>
                       </div>
-                      <div className="col-span-2 text-center font-bold text-slate-850 font-mono">{score.toFixed(1)}</div>
+                      <div className="col-span-2 text-center font-bold text-slate-850 font-mono">{Math.round(score)}</div>
                       <div className="col-span-2 text-center text-slate-500 font-bold">{weight * 100}%</div>
-                      <div className="col-span-3 sm:col-span-2 text-right font-black text-slate-900 font-mono">{contrib.toFixed(2)}</div>
+                      <div className="col-span-3 sm:col-span-2 text-right font-black text-slate-900 font-mono">{Math.round(contrib)}</div>
                     </div>
                   );
                 })}
@@ -471,7 +471,7 @@ export default function RekapitulasiView() {
                   <div className="col-span-2 text-center"></div>
                   <div className="col-span-2 text-center font-black text-slate-500">100%</div>
                   <div className="col-span-3 sm:col-span-2 text-right text-lg font-black text-[#0284c7] font-mono">
-                    {item.nilaiAkhir.toFixed(2)}
+                    {Math.round(item.nilaiAkhir)}
                   </div>
                 </div>
               </div>
@@ -497,7 +497,7 @@ export default function RekapitulasiView() {
               Rekomendasi Manajerial & Catatan Tindak Lanjut
             </h3>
             <div className="p-4 bg-slate-50/50 rounded-lg border border-slate-300 text-xs text-slate-700 italic leading-relaxed shadow-xs min-h-[60px]">
-              {item.rekomendasi.trim() ? `“${item.rekomendasi}”` : `“Kinerja dinilai ${predikat} dengan rata-rata tertimbang ${item.nilaiAkhir.toFixed(2)}.”`}
+              {item.rekomendasi.trim() ? `“${item.rekomendasi}”` : `“Kinerja dinilai ${predikat} dengan rata-rata tertimbang ${Math.round(item.nilaiAkhir)}.”`}
             </div>
           </div>
 
@@ -602,7 +602,7 @@ export default function RekapitulasiView() {
             </div>
             <div className="bg-slate-50 p-3 rounded-lg border border-slate-200 text-center">
               <p className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Rata-rata Nilai</p>
-              <p className="text-xl font-black text-[#0284c7] mt-1">{avgScore.toFixed(2)}</p>
+              <p className="text-xl font-black text-[#0284c7] mt-1">{Math.round(avgScore)}</p>
             </div>
             <div className="bg-slate-50 p-3 rounded-lg border border-slate-200 text-center">
               <p className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Sangat Baik / Baik</p>
@@ -647,11 +647,11 @@ export default function RekapitulasiView() {
                         </div>
                       </td>
                       <td className="py-2 px-3 border-r border-slate-250 font-semibold">{item.unitKode || "-"}</td>
-                      <td className="py-2 px-3 text-center border-r border-slate-250 font-mono">{item.scores.integritas.toFixed(1)}</td>
-                      <td className="py-2 px-3 text-center border-r border-slate-250 font-mono">{item.scores.mutu.toFixed(1)}</td>
-                      <td className="py-2 px-3 text-center border-r border-slate-250 font-mono">{item.scores.waktu.toFixed(1)}</td>
-                      <td className="py-2 px-3 text-center border-r border-slate-250 font-mono">{item.scores.k3l.toFixed(1)}</td>
-                      <td className="py-2 px-3 text-center border-r border-slate-250 font-black text-slate-950 font-mono bg-sky-50/30">{item.nilaiAkhir.toFixed(2)}</td>
+                      <td className="py-2 px-3 text-center border-r border-slate-250 font-mono">{Math.round(item.scores.integritas)}</td>
+                      <td className="py-2 px-3 text-center border-r border-slate-250 font-mono">{Math.round(item.scores.mutu)}</td>
+                      <td className="py-2 px-3 text-center border-r border-slate-250 font-mono">{Math.round(item.scores.waktu)}</td>
+                      <td className="py-2 px-3 text-center border-r border-slate-250 font-mono">{Math.round(item.scores.k3l)}</td>
+                      <td className="py-2 px-3 text-center border-r border-slate-250 font-black text-slate-950 font-mono bg-sky-50/30">{Math.round(item.nilaiAkhir)}</td>
                       <td className="py-2 px-3 text-center font-bold">
                         <span className={`uppercase text-[9px] font-black ${color}`}>{predikat}</span>
                       </td>

@@ -135,7 +135,7 @@ export function calculateFinalScore(scores: AspectScores): number {
     const k = key as AspectKey;
     final += (scores[k] || 0) * ASPECT_WEIGHTS[k];
   }
-  return Math.round(final * 100) / 100;
+  return Math.round(final);
 }
 
 export function getPredikatAndColor(score: number): {
@@ -144,28 +144,29 @@ export function getPredikatAndColor(score: number): {
   bgColor: string;
   borderColor: string;
 } {
-  if (score >= 4.25) {
+  const roundedScore = Math.round(score);
+  if (roundedScore >= 5 || score >= 4.25) {
     return {
       predikat: "Sangat Baik",
       color: "text-emerald-700 dark:text-emerald-400",
       bgColor: "bg-emerald-50 dark:bg-emerald-950/40",
       borderColor: "border-emerald-200 dark:border-emerald-800",
     };
-  } else if (score >= 3.5) {
+  } else if (roundedScore === 4 || score >= 3.5) {
     return {
       predikat: "Baik",
       color: "text-sky-700 dark:text-sky-400",
       bgColor: "bg-sky-50 dark:bg-sky-950/40",
       borderColor: "border-sky-200 dark:border-sky-800",
     };
-  } else if (score >= 3.0) {
+  } else if (roundedScore === 3 || score >= 3.0) {
     return {
       predikat: "Cukup",
       color: "text-amber-700 dark:text-amber-400",
       bgColor: "bg-amber-50 dark:bg-amber-950/40",
       borderColor: "border-amber-200 dark:border-amber-800",
     };
-  } else if (score >= 2.5) {
+  } else if (roundedScore === 2 || score >= 2.5) {
     return {
       predikat: "Kurang",
       color: "text-orange-700 dark:text-orange-400",

@@ -69,14 +69,14 @@ export default function InputPenilaianView() {
   
     // 8 Aspects scores state
   const [scores, setScores] = useState<AspectScores>({
-    integritas: 4.0,
-    kerjasama: 4.0,
-    mutu: 4.0,
-    waktu: 4.0,
-    harga: 4.0,
-    k3l: 4.0,
-    keamanan: 4.0,
-    energi: 4.0,
+    integritas: 4,
+    kerjasama: 4,
+    mutu: 4,
+    waktu: 4,
+    harga: 4,
+    k3l: 4,
+    keamanan: 4,
+    energi: 4,
   });
 
   const [rekomendasi, setRekomendasi] = useState("");
@@ -170,14 +170,14 @@ export default function InputPenilaianView() {
       setLampiranUkuran("");
       setEvaluator(currentUser ? `${currentUser.nama} (${currentUser.role})` : "Syaiful Arifin (Manajer Logistik)");
       setScores({
-        integritas: 4.0,
-        kerjasama: 4.0,
-        mutu: 4.0,
-        waktu: 4.0,
-        harga: 4.0,
-        k3l: 4.0,
-        keamanan: 4.0,
-        energi: 4.0,
+        integritas: 4,
+        kerjasama: 4,
+        mutu: 4,
+        waktu: 4,
+        harga: 4,
+        k3l: 4,
+        keamanan: 4,
+        energi: 4,
       });
     }
   }, [editingEvaluation, suppliers, units, currentUser, userAssignedUnitId]);
@@ -200,9 +200,9 @@ export default function InputPenilaianView() {
     }
   }, [units, userAssignedUnitId, editingEvaluation]);
 
-  // Handle score change
+  // Handle score change (Strictly integer numbers without decimals)
   const handleScoreChange = (key: AspectKey, val: number) => {
-    const safeVal = Math.max(1, Math.min(5, Math.round(val * 100) / 100));
+    const safeVal = Math.max(1, Math.min(5, Math.round(val)));
     setScores(prev => ({
       ...prev,
       [key]: safeVal
@@ -540,11 +540,11 @@ export default function InputPenilaianView() {
                         <p className="text-[10px] text-slate-400 leading-relaxed mt-0.5">{ASPECT_DESCRIPTIONS[key].replace(/\n/g, "; ")}</p>
                       </div>
                       <div className="col-span-2 text-center font-bold text-slate-850 font-mono">
-                        {score !== null ? score.toFixed(1) : "........"}
+                        {score !== null ? Math.round(score) : "........"}
                       </div>
                       <div className="col-span-2 text-center text-slate-500 font-bold">{weight * 100}%</div>
                       <div className="col-span-3 sm:col-span-2 text-right font-black text-slate-900 font-mono">
-                        {contrib !== null ? contrib.toFixed(2) : "........"}
+                        {contrib !== null ? (Math.round(contrib * 100) / 100) : "........"}
                       </div>
                     </div>
                   );
@@ -558,7 +558,7 @@ export default function InputPenilaianView() {
                   <div className="col-span-2 text-center"></div>
                   <div className="col-span-2 text-center font-black text-slate-500">100%</div>
                   <div className="col-span-3 sm:col-span-2 text-right text-lg font-black text-[#0284c7] font-mono">
-                    {isPrintBlankForm ? "........" : currentNilaiAkhir.toFixed(2)}
+                    {isPrintBlankForm ? "........" : Math.round(currentNilaiAkhir)}
                   </div>
                 </div>
               </div>
@@ -611,7 +611,7 @@ export default function InputPenilaianView() {
                   <p className="text-slate-300">................................................................................................................................................................................................................................</p>
                 </div>
               ) : (
-                rekomendasi.trim() ? `“${rekomendasi}”` : `“Kinerja dinilai ${predikat} dengan rata-rata tertimbang ${currentNilaiAkhir.toFixed(2)}.”`
+                rekomendasi.trim() ? `“${rekomendasi}”` : `“Kinerja dinilai ${predikat} dengan rata-rata tertimbang ${Math.round(currentNilaiAkhir)}.”`
               )}
             </div>
           </div>
@@ -1068,13 +1068,14 @@ export default function InputPenilaianView() {
                 const desc = ASPECT_DESCRIPTIONS[key];
                 const scoreValue = scores[key];
 
-                // Performance label for individual category
-                let scoreDesc = "Kurang";
-                let scoreColor = "text-orange-500";
-                if (scoreValue >= 4.25) { scoreDesc = "Sangat Baik"; scoreColor = "text-emerald-500"; }
-                else if (scoreValue >= 3.5) { scoreDesc = "Baik"; scoreColor = "text-sky-500"; }
-                else if (scoreValue >= 3.0) { scoreDesc = "Cukup"; scoreColor = "text-amber-500"; }
-                else if (scoreValue < 2.5) { scoreDesc = "Sangat Kurang"; scoreColor = "text-rose-500"; }
+                // Performance label for individual category (Integers 1-5)
+                const roundedScoreVal = Math.round(scoreValue);
+                let scoreDesc = "Sangat Kurang";
+                let scoreColor = "text-rose-500";
+                if (roundedScoreVal >= 5) { scoreDesc = "Sangat Baik"; scoreColor = "text-emerald-500"; }
+                else if (roundedScoreVal === 4) { scoreDesc = "Baik"; scoreColor = "text-sky-500"; }
+                else if (roundedScoreVal === 3) { scoreDesc = "Cukup"; scoreColor = "text-amber-500"; }
+                else if (roundedScoreVal === 2) { scoreDesc = "Kurang"; scoreColor = "text-orange-500"; }
 
                 return (
                   <div key={key} className="p-3 bg-slate-50 dark:bg-slate-800/40 rounded border border-slate-200 dark:border-slate-800/80 space-y-2">
@@ -1104,36 +1105,55 @@ export default function InputPenilaianView() {
                         </div>
                       </div>
 
-                      {/* Score Badge Selector */}
-                      <div className="flex items-center gap-2 self-stretch md:self-auto justify-between bg-white dark:bg-slate-950 p-1.5 rounded border border-slate-200 dark:border-slate-800 md:w-auto">
-                        <span className={`text-[10px] font-bold px-1.5 ${scoreColor}`}>
-                          {scoreDesc}
+                      {/* Score Badge & Quick Integer Rating Buttons (1 to 5) */}
+                      <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 self-stretch md:self-auto bg-white dark:bg-slate-950 p-2 rounded border border-slate-200 dark:border-slate-800 md:w-auto">
+                        <span className={`text-[10px] font-bold px-1.5 ${scoreColor} shrink-0`}>
+                          {scoreDesc} ({roundedScoreVal})
                         </span>
+
+                        <div className="flex items-center gap-1">
+                          {[1, 2, 3, 4, 5].map((num) => (
+                            <button
+                              key={num}
+                              type="button"
+                              onClick={() => handleScoreChange(key, num)}
+                              title={`Pilih nilai ${num}`}
+                              className={`w-7 h-7 text-xs font-bold rounded flex items-center justify-center transition-all cursor-pointer ${
+                                roundedScoreVal === num
+                                  ? "bg-[#0284c7] text-white shadow-xs font-extrabold scale-105 ring-2 ring-sky-300 dark:ring-sky-700"
+                                  : "bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700"
+                              }`}
+                            >
+                              {num}
+                            </button>
+                          ))}
+                        </div>
+
                         <input 
                           type="number"
                           min="1"
                           max="5"
-                          step="0.1"
-                          value={scoreValue}
-                          onChange={(e) => handleScoreChange(key, Number(e.target.value))}
-                          className="w-12 px-1 py-0.5 text-center text-xs font-bold bg-slate-100 dark:bg-slate-800 rounded border-none text-slate-900 dark:text-white outline-hidden focus:ring-1 focus:ring-sky-500 font-mono"
+                          step="1"
+                          value={roundedScoreVal}
+                          onChange={(e) => handleScoreChange(key, parseInt(e.target.value) || 1)}
+                          className="w-10 px-1 py-0.5 text-center text-xs font-bold bg-slate-100 dark:bg-slate-800 rounded border-none text-slate-900 dark:text-white outline-hidden focus:ring-1 focus:ring-sky-500 font-mono"
                         />
                       </div>
                     </div>
 
-                    {/* Interactive Slider */}
-                    <div className="flex items-center gap-3">
-                      <span className="text-[9px] text-slate-400 font-mono font-bold">1.0</span>
+                    {/* Interactive Slider (Bulat 1-5) */}
+                    <div className="flex items-center gap-3 pt-1">
+                      <span className="text-[9px] text-slate-400 font-mono font-bold">1</span>
                       <input 
                         type="range"
                         min="1"
                         max="5"
-                        step="0.1"
-                        value={scoreValue}
-                        onChange={(e) => handleScoreChange(key, Number(e.target.value))}
-                        className="w-full accent-[#0284c7] dark:accent-sky-400 h-1 bg-slate-200 dark:bg-slate-700 rounded cursor-pointer"
+                        step="1"
+                        value={roundedScoreVal}
+                        onChange={(e) => handleScoreChange(key, parseInt(e.target.value) || 1)}
+                        className="w-full accent-[#0284c7] dark:accent-sky-400 h-1.5 bg-slate-200 dark:bg-slate-700 rounded cursor-pointer"
                       />
-                      <span className="text-[9px] text-slate-400 font-mono font-bold">5.0</span>
+                      <span className="text-[9px] text-slate-400 font-mono font-bold">5</span>
                     </div>
                   </div>
                 );
