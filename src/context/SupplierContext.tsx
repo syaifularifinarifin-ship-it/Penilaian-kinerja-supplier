@@ -701,11 +701,12 @@ export const SupplierProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
   // CRUD Suppliers
   const addSupplier = (supplierData: Omit<Supplier, "id">) => {
-    const newId = `sup-${Date.now()}`;
+    const newId = `sup-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`;
     const newSupplier: Supplier = {
       ...supplierData,
       id: newId,
     };
+    setSuppliers(prev => [...prev, newSupplier]);
     setDoc(doc(db, "suppliers", newId), newSupplier)
       .catch(err => handleFirestoreError(err, OperationType.WRITE, `suppliers/${newId}`));
     addLog("Tambah Supplier", `Menambahkan supplier baru: ${newSupplier.nama}`);
@@ -713,6 +714,7 @@ export const SupplierProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   };
 
   const updateSupplier = (updatedSupplier: Supplier) => {
+    setSuppliers(prev => prev.map(s => s.id === updatedSupplier.id ? updatedSupplier : s));
     setDoc(doc(db, "suppliers", updatedSupplier.id), updatedSupplier)
       .catch(err => handleFirestoreError(err, OperationType.WRITE, `suppliers/${updatedSupplier.id}`));
     
@@ -731,6 +733,7 @@ export const SupplierProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const deleteSupplier = (id: string) => {
     const supplier = suppliers.find(s => s.id === id);
     if (!supplier) return;
+    setSuppliers(prev => prev.filter(s => s.id !== id));
     deleteDoc(doc(db, "suppliers", id))
       .catch(err => handleFirestoreError(err, OperationType.DELETE, `suppliers/${id}`));
     
@@ -745,7 +748,7 @@ export const SupplierProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
   // CRUD Evaluations
   const addEvaluation = (evalData: Omit<Evaluation, "id" | "nilaiAkhir" | "predikat">) => {
-    const newId = `eval-${Date.now()}`;
+    const newId = `eval-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`;
     const nilaiAkhir = calculateFinalScore(evalData.scores);
     const { predikat } = getPredikatAndColor(nilaiAkhir);
     
@@ -757,6 +760,7 @@ export const SupplierProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       tanggalPenilaian: evalData.tanggalPenilaian || new Date().toISOString().split("T")[0]
     };
 
+    setEvaluations(prev => [newEvaluation, ...prev]);
     setDoc(doc(db, "evaluations", newId), newEvaluation)
       .catch(err => handleFirestoreError(err, OperationType.WRITE, `evaluations/${newId}`));
     addLog("Tambah Penilaian", `Menginput penilaian untuk ${newEvaluation.supplierNama} periode ${newEvaluation.periode} ${newEvaluation.tahun}`);
@@ -773,6 +777,7 @@ export const SupplierProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       predikat
     };
 
+    setEvaluations(prev => prev.map(e => e.id === finalEval.id ? finalEval : e));
     setDoc(doc(db, "evaluations", finalEval.id), finalEval)
       .catch(err => handleFirestoreError(err, OperationType.WRITE, `evaluations/${finalEval.id}`));
     addLog("Update Penilaian", `Memperbarui penilaian ${finalEval.supplierNama} periode ${finalEval.periode} ${finalEval.tahun}`);
@@ -781,6 +786,7 @@ export const SupplierProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const deleteEvaluation = (id: string) => {
     const evaluation = evaluations.find(e => e.id === id);
     if (!evaluation) return;
+    setEvaluations(prev => prev.filter(e => e.id !== id));
     deleteDoc(doc(db, "evaluations", id))
       .catch(err => handleFirestoreError(err, OperationType.DELETE, `evaluations/${id}`));
     addLog("Hapus Penilaian", `Menghapus penilaian ${evaluation.supplierNama} periode ${evaluation.periode} ${evaluation.tahun}`);
@@ -793,36 +799,48 @@ export const SupplierProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       ...unitData,
       id: newId
     };
+    // Optimistic local state update
+    setUnits(prev => [...prev.filter(u => u.id !== newId), newUnit]);
     try {
       await setDoc(doc(db, "units", newId), newUnit);
       addLog("Tambah Unit", `Menambahkan unit baru: [${newUnit.kode}] ${newUnit.nama}`);
     } catch (err) {
       handleFirestoreError(err, OperationType.WRITE, `units/${newId}`);
+      throw err;
     }
     return newUnit;
   };
 
   const updateUnit = async (updatedUnit: Unit): Promise<void> => {
+    setUnits(prev => prev.map(u => u.id === updatedUnit.id ? updatedUnit : u));
     try {
       await setDoc(doc(db, "units", updatedUnit.id), updatedUnit);
       addLog("Update Unit", `Memperbarui data unit: [${updatedUnit.kode}] ${updatedUnit.nama}`);
     } catch (err) {
       handleFirestoreError(err, OperationType.WRITE, `units/${updatedUnit.id}`);
+      throw err;
     }
   };
 
   const deleteUnit = async (id: string): Promise<void> => {
     const unit = units.find(u => u.id === id);
     if (!unit) return;
+    setUnits(prev => prev.filter(u => u.id !== id));
     try {
       await deleteDoc(doc(db, "units", id));
       addLog("Hapus Unit", `Menghapus unit: [${unit.kode}] ${unit.nama}`);
     } catch (err) {
       handleFirestoreError(err, OperationType.DELETE, `units/${id}`);
+      throw err;
     }
   };
 
   const addUnitsBulk = async (newUnits: Unit[]): Promise<void> => {
+    setUnits(prev => {
+      const existingIds = new Set(prev.map(u => u.id));
+      const filtered = newUnits.filter(u => !existingIds.has(u.id));
+      return [...prev, ...filtered];
+    });
     try {
       for (const u of newUnits) {
         await setDoc(doc(db, "units", u.id), u);
@@ -830,10 +848,16 @@ export const SupplierProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       addLog("Impor Bulk Unit", `Berhasil menyimpan ${newUnits.length} unit ke database Firestore.`);
     } catch (err) {
       handleFirestoreError(err, OperationType.WRITE, "units");
+      throw err;
     }
   };
 
   const addSuppliersBulk = async (newSuppliers: Supplier[]): Promise<void> => {
+    setSuppliers(prev => {
+      const existingIds = new Set(prev.map(s => s.id));
+      const filtered = newSuppliers.filter(s => !existingIds.has(s.id));
+      return [...prev, ...filtered];
+    });
     try {
       for (const s of newSuppliers) {
         await setDoc(doc(db, "suppliers", s.id), s);
@@ -841,16 +865,18 @@ export const SupplierProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       addLog("Impor Bulk Supplier", `Berhasil menyimpan ${newSuppliers.length} supplier ke database Firestore.`);
     } catch (err) {
       handleFirestoreError(err, OperationType.WRITE, "suppliers");
+      throw err;
     }
   };
 
   // CRUD System Users (Hak Akses)
   const addSystemUser = (userData: Omit<SystemUser, "id">) => {
-    const newId = `user-${Date.now()}`;
+    const newId = `user-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`;
     const newUser: SystemUser = {
       id: newId,
       ...userData
     };
+    setSystemUsers(prev => [...prev, newUser]);
     setDoc(doc(db, "systemUsers", newId), newUser)
       .catch(err => handleFirestoreError(err, OperationType.WRITE, `systemUsers/${newId}`));
     addLog("Tambah Pengguna", `Menambahkan pengguna sistem baru: ${newUser.nama} (${newUser.role})`);
@@ -858,6 +884,7 @@ export const SupplierProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   };
 
   const updateSystemUser = (updatedUser: SystemUser) => {
+    setSystemUsers(prev => prev.map(u => u.id === updatedUser.id ? updatedUser : u));
     setDoc(doc(db, "systemUsers", updatedUser.id), updatedUser)
       .catch(err => handleFirestoreError(err, OperationType.WRITE, `systemUsers/${updatedUser.id}`));
     addLog("Update Pengguna", `Memperbarui data pengguna: ${updatedUser.nama} (${updatedUser.role})`);
@@ -876,6 +903,7 @@ export const SupplierProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       return;
     }
 
+    setSystemUsers(prev => prev.filter(u => u.id !== id));
     deleteDoc(doc(db, "systemUsers", id))
       .catch(err => handleFirestoreError(err, OperationType.DELETE, `systemUsers/${id}`));
     addLog("Hapus Pengguna", `Menghapus pengguna: ${userToDelete.nama} (${userToDelete.role})`);
