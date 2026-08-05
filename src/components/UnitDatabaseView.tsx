@@ -23,7 +23,8 @@ import {
   Cpu,
   FileSpreadsheet,
   FileJson,
-  Download
+  Download,
+  Loader2
 } from "lucide-react";
 
 export default function UnitDatabaseView() {
@@ -32,6 +33,7 @@ export default function UnitDatabaseView() {
     addUnit, 
     updateUnit, 
     deleteUnit,
+    addUnitsBulk,
     setUnits,
     addLog,
     hasPermission
@@ -39,6 +41,7 @@ export default function UnitDatabaseView() {
 
   // State Management
   const [searchTerm, setSearchTerm] = useState("");
+  const [isSaving, setIsSaving] = useState(false);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingUnit, setEditingUnit] = useState<Unit | null>(null);
   const [isUploadOpen, setIsUploadOpen] = useState(false);
@@ -81,35 +84,46 @@ export default function UnitDatabaseView() {
   };
 
   // Handle Submit Form
-  const handleSubmitUnit = (e: React.FormEvent) => {
+  const handleSubmitUnit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formKode.trim() || !formNama.trim()) {
       alert("Kode Unit dan Nama Unit wajib diisi!");
       return;
     }
 
-    const unitData = {
-      kode: formKode.trim().toUpperCase(),
-      nama: formNama.trim(),
-    };
+    setIsSaving(true);
+    try {
+      const unitData = {
+        kode: formKode.trim().toUpperCase(),
+        nama: formNama.trim(),
+      };
 
-    if (editingUnit) {
-      updateUnit({
-        ...editingUnit,
-        ...unitData
-      });
-      addLog("Edit Unit", `Mengedit data unit: [${formKode}] ${formNama}`);
-    } else {
-      addUnit(unitData);
+      if (editingUnit) {
+        await updateUnit({
+          ...editingUnit,
+          ...unitData
+        });
+        addLog("Edit Unit", `Mengedit data unit: [${formKode}] ${formNama}`);
+      } else {
+        await addUnit(unitData);
+      }
+
+      setIsFormOpen(false);
+    } catch (err: any) {
+      alert(`Gagal menyimpan unit: ${err?.message || err}`);
+    } finally {
+      setIsSaving(false);
     }
-
-    setIsFormOpen(false);
   };
 
   // Handle Delete Unit
-  const handleDeleteUnit = (id: string, code: string, name: string) => {
+  const handleDeleteUnit = async (id: string, code: string, name: string) => {
     if (confirm(`Apakah Anda yakin ingin menghapus unit "[${code}] ${name}"?`)) {
-      deleteUnit(id);
+      try {
+        await deleteUnit(id);
+      } catch (err: any) {
+        alert(`Gagal menghapus unit: ${err?.message || err}`);
+      }
     }
   };
 
@@ -439,25 +453,36 @@ export default function UnitDatabaseView() {
   };
 
   // Perform Import Execution
-  const handleExecuteImport = () => {
+  const handleExecuteImport = async () => {
     if (!parsedPreview || parsedPreview.length === 0) return;
 
+    setIsSaving(true);
     try {
-      const newUnits: Unit[] = parsedPreview.map((item, index) => ({
-        id: item.id || `unit-${Date.now()}-${index}`,
-        kode: String(item.kode).toUpperCase(),
-        nama: String(item.nama)
-      }));
+      const existingKodeMap = new Set(units.map(u => u.kode.toLowerCase()));
+      const newUnits: Unit[] = [];
+      
+      parsedPreview.forEach((item, index) => {
+        const kodeStr = String(item.kode || "").trim().toUpperCase();
+        const namaStr = String(item.nama || "").trim() || kodeStr;
 
-      // Deduplicate by Unit Code (kode)
-      setUnits(prev => {
-        const filteredNew = newUnits.filter(nu => !prev.some(pu => pu.kode.toLowerCase() === nu.kode.toLowerCase()));
-        const combined = [...prev, ...filteredNew];
-        addLog("Impor Bulk Unit", `Mengimpor ${filteredNew.length} unit baru (mengabaikan duplikat kode).`);
-        return combined;
+        if (kodeStr && !existingKodeMap.has(kodeStr.toLowerCase())) {
+          existingKodeMap.add(kodeStr.toLowerCase());
+          newUnits.push({
+            id: item.id || `unit-${Date.now()}-${index}-${Math.random().toString(36).substring(2, 6)}`,
+            kode: kodeStr,
+            nama: namaStr
+          });
+        }
       });
 
-      alert(`Impor Sukses! ${newUnits.length} unit berhasil ditambahkan.`);
+      if (newUnits.length === 0) {
+        alert("Tidak ada unit baru yang ditambahkan (semua kode unit sudah terdaftar di database).");
+        setIsSaving(false);
+        return;
+      }
+
+      await addUnitsBulk(newUnits);
+      alert(`Impor Sukses! ${newUnits.length} unit baru berhasil disimpan ke database.`);
 
       // Reset
       setPasteData("");
@@ -465,7 +490,9 @@ export default function UnitDatabaseView() {
       setUploadSuccess("");
       setIsUploadOpen(false);
     } catch (err: any) {
-      alert(`Gagal menyimpan impor: ${err.message}`);
+      alert(`Gagal menyimpan impor unit: ${err?.message || err}`);
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -698,16 +725,19 @@ U6,Unit 6`;
               <div className="flex items-center justify-end gap-2 border-t border-slate-100 dark:border-slate-800 pt-4 mt-2">
                 <button
                   type="button"
+                  disabled={isSaving}
                   onClick={() => setIsFormOpen(false)}
-                  className="px-4 py-2 text-xs font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded cursor-pointer border border-slate-200 dark:border-slate-800"
+                  className="px-4 py-2 text-xs font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded cursor-pointer border border-slate-200 dark:border-slate-800 disabled:opacity-50"
                 >
                   Batal
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 text-xs font-semibold text-white bg-sky-600 hover:bg-sky-700 rounded cursor-pointer transition-all"
+                  disabled={isSaving}
+                  className="px-4 py-2 text-xs font-semibold text-white bg-sky-600 hover:bg-sky-700 disabled:opacity-50 disabled:cursor-not-allowed rounded cursor-pointer transition-all flex items-center gap-2"
                 >
-                  {editingUnit ? "Simpan Perubahan" : "Simpan Unit"}
+                  {isSaving && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+                  {isSaving ? "Menyimpan..." : (editingUnit ? "Simpan Perubahan" : "Simpan Unit")}
                 </button>
               </div>
             </form>
@@ -929,19 +959,29 @@ U6,Unit 6`;
               <div className="flex items-center gap-2">
                 <button
                   type="button"
+                  disabled={isSaving}
                   onClick={() => setIsUploadOpen(false)}
-                  className="px-4 py-2 text-xs font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded cursor-pointer border border-slate-200 dark:border-slate-800"
+                  className="px-4 py-2 text-xs font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded cursor-pointer border border-slate-200 dark:border-slate-800 disabled:opacity-50"
                 >
                   Batal
                 </button>
                 <button
                   type="button"
-                  disabled={!parsedPreview || parsedPreview.length === 0}
+                  disabled={!parsedPreview || parsedPreview.length === 0 || isSaving}
                   onClick={handleExecuteImport}
                   className="px-4 py-2 text-xs font-semibold text-white bg-sky-600 hover:bg-sky-700 disabled:opacity-40 disabled:cursor-not-allowed rounded cursor-pointer transition-all flex items-center gap-2"
                 >
-                  <CheckCircle2 className="w-4 h-4" />
-                  Simpan Impor ({parsedPreview ? parsedPreview.length : 0} Unit)
+                  {isSaving ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      Menyimpan ke Database...
+                    </>
+                  ) : (
+                    <>
+                      <CheckCircle2 className="w-4 h-4" />
+                      Simpan Impor ({parsedPreview ? parsedPreview.length : 0} Unit)
+                    </>
+                  )}
                 </button>
               </div>
             </div>

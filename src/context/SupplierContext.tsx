@@ -68,9 +68,11 @@ interface SupplierContextProps {
   deleteEvaluation: (id: string) => void;
 
   // CRUD Units
-  addUnit: (unit: Omit<Unit, "id">) => Unit;
-  updateUnit: (unit: Unit) => void;
-  deleteUnit: (id: string) => void;
+  addUnit: (unit: Omit<Unit, "id">) => Promise<Unit>;
+  updateUnit: (unit: Unit) => Promise<void>;
+  deleteUnit: (id: string) => Promise<void>;
+  addUnitsBulk: (units: Unit[]) => Promise<void>;
+  addSuppliersBulk?: (suppliers: Supplier[]) => Promise<void>;
 
   // Logging
   addLog: (action: string, details: string) => void;
@@ -785,30 +787,61 @@ export const SupplierProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   };
 
   // CRUD Units
-  const addUnit = (unitData: Omit<Unit, "id">) => {
-    const newId = `unit-${Date.now()}`;
+  const addUnit = async (unitData: Omit<Unit, "id">): Promise<Unit> => {
+    const newId = `unit-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`;
     const newUnit: Unit = {
       ...unitData,
       id: newId
     };
-    setDoc(doc(db, "units", newId), newUnit)
-      .catch(err => handleFirestoreError(err, OperationType.WRITE, `units/${newId}`));
-    addLog("Tambah Unit", `Menambahkan unit baru: [${newUnit.kode}] ${newUnit.nama}`);
+    try {
+      await setDoc(doc(db, "units", newId), newUnit);
+      addLog("Tambah Unit", `Menambahkan unit baru: [${newUnit.kode}] ${newUnit.nama}`);
+    } catch (err) {
+      handleFirestoreError(err, OperationType.WRITE, `units/${newId}`);
+    }
     return newUnit;
   };
 
-  const updateUnit = (updatedUnit: Unit) => {
-    setDoc(doc(db, "units", updatedUnit.id), updatedUnit)
-      .catch(err => handleFirestoreError(err, OperationType.WRITE, `units/${updatedUnit.id}`));
-    addLog("Update Unit", `Memperbarui data unit: [${updatedUnit.kode}] ${updatedUnit.nama}`);
+  const updateUnit = async (updatedUnit: Unit): Promise<void> => {
+    try {
+      await setDoc(doc(db, "units", updatedUnit.id), updatedUnit);
+      addLog("Update Unit", `Memperbarui data unit: [${updatedUnit.kode}] ${updatedUnit.nama}`);
+    } catch (err) {
+      handleFirestoreError(err, OperationType.WRITE, `units/${updatedUnit.id}`);
+    }
   };
 
-  const deleteUnit = (id: string) => {
+  const deleteUnit = async (id: string): Promise<void> => {
     const unit = units.find(u => u.id === id);
     if (!unit) return;
-    deleteDoc(doc(db, "units", id))
-      .catch(err => handleFirestoreError(err, OperationType.DELETE, `units/${id}`));
-    addLog("Hapus Unit", `Menghapus unit: [${unit.kode}] ${unit.nama}`);
+    try {
+      await deleteDoc(doc(db, "units", id));
+      addLog("Hapus Unit", `Menghapus unit: [${unit.kode}] ${unit.nama}`);
+    } catch (err) {
+      handleFirestoreError(err, OperationType.DELETE, `units/${id}`);
+    }
+  };
+
+  const addUnitsBulk = async (newUnits: Unit[]): Promise<void> => {
+    try {
+      for (const u of newUnits) {
+        await setDoc(doc(db, "units", u.id), u);
+      }
+      addLog("Impor Bulk Unit", `Berhasil menyimpan ${newUnits.length} unit ke database Firestore.`);
+    } catch (err) {
+      handleFirestoreError(err, OperationType.WRITE, "units");
+    }
+  };
+
+  const addSuppliersBulk = async (newSuppliers: Supplier[]): Promise<void> => {
+    try {
+      for (const s of newSuppliers) {
+        await setDoc(doc(db, "suppliers", s.id), s);
+      }
+      addLog("Impor Bulk Supplier", `Berhasil menyimpan ${newSuppliers.length} supplier ke database Firestore.`);
+    } catch (err) {
+      handleFirestoreError(err, OperationType.WRITE, "suppliers");
+    }
   };
 
   // CRUD System Users (Hak Akses)
@@ -913,6 +946,8 @@ export const SupplierProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       addUnit,
       updateUnit,
       deleteUnit,
+      addUnitsBulk,
+      addSuppliersBulk,
       
       addLog,
       clearLogs

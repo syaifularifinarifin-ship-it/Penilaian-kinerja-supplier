@@ -38,6 +38,7 @@ export default function SupplierDatabaseView() {
     addSupplier, 
     updateSupplier, 
     deleteSupplier,
+    addSuppliersBulk,
     setSuppliers,
     setEvaluations,
     addLog,
@@ -354,13 +355,13 @@ export default function SupplierDatabaseView() {
   };
 
   // Perform Import Execution
-  const handleExecuteImport = () => {
+  const handleExecuteImport = async () => {
     if (!parsedPreview || parsedPreview.length === 0) return;
 
     try {
       if (uploadTab === "supplier") {
         const newSuppliers: Supplier[] = parsedPreview.map((item, index) => ({
-          id: item.id || `sup-${Date.now()}-${index}`,
+          id: item.id || `sup-${Date.now()}-${index}-${Math.random().toString(36).substring(2, 6)}`,
           nama: String(item.nama),
           noVendorEllipse: String(item.noVendorEllipse || item.noVendor || item.vendorEllipse || ""),
           kategoriBisnis: String(item.kategoriBisnis || "Penyedia"),
@@ -370,15 +371,22 @@ export default function SupplierDatabaseView() {
           telepon: String(item.telepon || "")
         }));
 
-        // Deduplicate or append? We will append but avoid exact name duplicates
-        setSuppliers(prev => {
-          const filteredNew = newSuppliers.filter(ns => !prev.some(ps => ps.nama.toLowerCase() === ns.nama.toLowerCase()));
-          const combined = [...prev, ...filteredNew];
-          addLog("Impor Bulk Supplier", `Mengimpor ${filteredNew.length} supplier baru (mengabaikan duplikat nama).`);
-          return combined;
-        });
+        const filteredNew = newSuppliers.filter(ns => !suppliers.some(ps => ps.nama.toLowerCase() === ns.nama.toLowerCase()));
+        
+        if (filteredNew.length === 0) {
+          alert("Semua supplier dalam file sudah ada di database.");
+          return;
+        }
 
-        alert(`Impor Sukses! ${newSuppliers.length} supplier telah berhasil diintegrasikan.`);
+        if (addSuppliersBulk) {
+          await addSuppliersBulk(filteredNew);
+        } else {
+          for (const sup of filteredNew) {
+            await addSupplier(sup);
+          }
+        }
+
+        alert(`Impor Sukses! ${filteredNew.length} supplier baru telah berhasil disimpan ke database.`);
       } else {
         // Import Evaluations
         const newEvaluations: Evaluation[] = parsedPreview.map((item, index) => {
