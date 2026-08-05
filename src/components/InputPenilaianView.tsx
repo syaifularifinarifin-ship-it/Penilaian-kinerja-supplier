@@ -42,6 +42,7 @@ import {
 export default function InputPenilaianView() {
   const {
     suppliers,
+    evaluations,
     addSupplier,
     addEvaluation,
     updateEvaluation,
@@ -212,6 +213,15 @@ export default function InputPenilaianView() {
   const currentNilaiAkhir = calculateFinalScore(scores);
   const { predikat, color, bgColor, borderColor } = getPredikatAndColor(currentNilaiAkhir);
 
+  // Live Duplicate PO detection
+  const trimmedPoInput = noPo.trim().toLowerCase();
+  const duplicatePoEval = trimmedPoInput
+    ? evaluations.find(ev => {
+        if (editingEvaluation && ev.id === editingEvaluation.id) return false;
+        return ev.noPo && ev.noPo.trim().toLowerCase() === trimmedPoInput;
+      })
+    : null;
+
   // Quick Register inline supplier
   const handleQuickSupSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -244,6 +254,22 @@ export default function InputPenilaianView() {
     if (!selectedSup) {
       setErrorMsg("Supplier tidak ditemukan.");
       return;
+    }
+
+    // Validation: Prevent duplicate evaluation with same No PO
+    const trimmedPo = noPo.trim();
+    if (trimmedPo) {
+      const duplicatePoEval = evaluations.find(ev => {
+        if (editingEvaluation && ev.id === editingEvaluation.id) return false;
+        return ev.noPo && ev.noPo.trim().toLowerCase() === trimmedPo.toLowerCase();
+      });
+
+      if (duplicatePoEval) {
+        setErrorMsg(
+          `Gagal Menyimpan Penilaian: Nomor PO "${trimmedPo}" sudah pernah digunakan pada penilaian vendor sebelumnya (${duplicatePoEval.supplierNama} - ${duplicatePoEval.periode} ${duplicatePoEval.tahun}). Penilaian dengan No. PO yang sama tidak dapat diinputkan dua kali!`
+        );
+        return;
+      }
     }
 
     const activeUnitId = isUnitRestricted && userAssignedUnitId ? userAssignedUnitId : unitId;
@@ -906,10 +932,23 @@ export default function InputPenilaianView() {
                   <input 
                     type="text"
                     value={noPo}
-                    onChange={(e) => setNoPo(e.target.value)}
+                    onChange={(e) => {
+                      setNoPo(e.target.value);
+                      if (errorMsg) setErrorMsg("");
+                    }}
                     placeholder="Contoh: PO/2026/00451"
-                    className="w-full px-2.5 py-1.5 text-xs bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded focus:ring-1 focus:ring-sky-500 focus:outline-hidden text-slate-900 dark:text-white"
+                    className={`w-full px-2.5 py-1.5 text-xs bg-slate-50 dark:bg-slate-900 border ${
+                      duplicatePoEval 
+                        ? "border-rose-500 text-rose-600 focus:ring-rose-500" 
+                        : "border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white focus:ring-sky-500"
+                    } rounded focus:ring-1 focus:outline-hidden font-mono`}
                   />
+                  {duplicatePoEval && (
+                    <p className="text-[10px] font-bold text-rose-600 dark:text-rose-400 mt-1 flex items-center gap-1">
+                      <AlertCircle className="w-3 h-3 shrink-0" />
+                      No. PO ini sudah terdaftar ({duplicatePoEval.supplierNama} - {duplicatePoEval.periode} {duplicatePoEval.tahun})
+                    </p>
+                  )}
                 </div>
 
                 {/* Tanggal PO */}
